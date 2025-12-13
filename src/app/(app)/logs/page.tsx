@@ -26,14 +26,14 @@ export default function LogsPage() {
   const firestore = useFirestore();
 
   const logsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user?.uid) return null;
     return query(
       collectionGroup(firestore, 'feedingLogs'),
       where('userId', '==', user.uid),
       orderBy('timestamp', 'desc'),
       limit(20)
     );
-  }, [user, firestore]);
+  }, [user?.uid, firestore]);
 
   const { data: feedingLogs, isLoading: areLogsLoading } = useCollection(logsQuery);
 
