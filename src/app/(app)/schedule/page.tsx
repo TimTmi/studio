@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, collectionGroup } from 'firebase/firestore';
 import { PlusCircle } from 'lucide-react';
 
 export default function SchedulePage() {
@@ -128,3 +128,5 @@ export default function SchedulePage() {
     </div>
   );
 }
+
+    

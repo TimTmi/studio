@@ -93,9 +93,9 @@ service cloud.firestore {
      * Validates required fields for creating a new FeedingSchedule.
      * Enforces the relationship between the Schedule and its parent Feeder.
      */
-    function hasValidFeedingScheduleForCreate(feederId) {
+    function hasValidFeedingScheduleForCreate(feederId, userId) {
       let data = request.resource.data;
-      return data.feederId == feederId;
+      return data.feederId == feederId && data.userId == userId;
     }
 
     /**
@@ -104,16 +104,16 @@ service cloud.firestore {
      */
     function hasValidFeedingScheduleForUpdate() {
       let data = request.resource.data;
-      return data.feederId == resource.data.feederId;
+      return data.feederId == resource.data.feederId && data.userId == resource.data.userId;
     }
 
     /**
      * Validates required fields for creating a new FeedingLog.
      * Enforces the relationship between the Log and its parent Feeder.
      */
-    function hasValidFeedingLogForCreate(feederId) {
+    function hasValidFeedingLogForCreate(feederId, userId) {
       let data = request.resource.data;
-      return data.feederId == feederId;
+      return data.feederId == feederId && data.userId == userId;
     }
 
     /**
@@ -122,16 +122,19 @@ service cloud.firestore {
      */
     function hasValidFeedingLogForUpdate() {
       let data = request.resource.data;
-      return data.feederId == resource.data.feederId;
+      return data.feederId == resource.data.feederId && data.userId == resource.data.userId;
     }
 
     // ------------------------------------------------------------------------
     // Collection Rules
     // ------------------------------------------------------------------------
     
-    // Rule to allow collection group queries on 'feedingLogs'
+    // Rule to allow collection group queries on 'feedingLogs' and 'feedingSchedules'
     match /{path=**}/feedingLogs/{logId} {
-       allow list: if isSignedIn() && request.auth.uid == request.query.where.value[0];
+       allow list: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+    match /{path=**}/feedingSchedules/{scheduleId} {
+       allow list: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
 
     /**
@@ -177,7 +180,7 @@ service cloud.firestore {
         match /feedingSchedules/{scheduleId} {
           allow get: if isOwner(userId);
           allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && hasValidFeedingScheduleForCreate(feederId);
+          allow create: if isOwner(userId) && hasValidFeedingScheduleForCreate(feederId, userId);
           allow update: if isExistingOwner(userId) && hasValidFeedingScheduleForUpdate();
           allow delete: if isExistingOwner(userId);
         }
@@ -193,7 +196,7 @@ service cloud.firestore {
         match /feedingLogs/{logId} {
           allow get: if isOwner(userId);
           allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && hasValidFeedingLogForCreate(feederId);
+          allow create: if isOwner(userId) && hasValidFeedingLogForCreate(feederId, userId);
           allow update: if isExistingOwner(userId) && hasValidFeedingLogForUpdate();
           allow delete: if isExistingOwner(userId);
         }
@@ -201,3 +204,4 @@ service cloud.firestore {
     }
   }
 }
+    

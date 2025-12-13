@@ -60,3 +60,5 @@ export type Schedule = {
   amount: number; // in cups
   days: string[];
 };
+
+    

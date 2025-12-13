@@ -78,6 +78,10 @@
           "type": "string",
           "description": "Reference to Feeder. (Relationship: Feeder 1:N FeedingSchedule)"
         },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. Ensures ownership for collectionGroup queries."
+        },
         "scheduledTime": {
           "type": "string",
           "description": "The time the feeder is scheduled to dispense food.",
@@ -91,6 +95,7 @@
       "required": [
         "id",
         "feederId",
+        "userId",
         "scheduledTime",
         "portionSize"
       ]
@@ -228,3 +233,4 @@
     "reasoning": "The Firestore data structure is designed to support the PetPal Hub application, focusing on user authentication, feeder management, feeding schedules, and logs. The structure emphasizes authorization independence and straightforward security rules by denormalizing authorization data. Path-based ownership is used for user-specific data, ensuring only the owning user can access their resources. The structure also enables efficient `list` operations.\n\nAuthorization Independence is achieved by using path-based ownership. For example, feeders, feeding schedules, and feeding logs are stored under the `/users/{userId}` collection, eliminating the need for `get()` calls in security rules to verify ownership. This ensures atomic operations and easier debugging.\n\nThe design adheres to the principle of Structural Segregation by keeping user-specific data separate, ensuring each collection has a homogeneous security posture.\n\nThe structure supports the required QAPs by using path-based ownership, enabling secure `list` operations within each user's data. For instance, listing all feeders for a user is a simple query on the `/users/{userId}/feeders` collection."
   }
 }
+    
