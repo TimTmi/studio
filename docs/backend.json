@@ -109,6 +109,10 @@
           "type": "string",
           "description": "Reference to Feeder. (Relationship: Feeder 1:N FeedingLog)"
         },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. Ensures ownership for collectionGroup queries."
+        },
         "timestamp": {
           "type": "string",
           "description": "The time the feeding event occurred.",
@@ -122,6 +126,7 @@
       "required": [
         "id",
         "feederId",
+        "userId",
         "timestamp",
         "portionSize"
       ]
