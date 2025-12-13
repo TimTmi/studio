@@ -60,6 +60,10 @@ export default function SignupPage() {
             setError('Please fill out all fields.');
             return;
         }
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long.');
+            return;
+        }
         initiateEmailSignUp(auth, email, password);
     }
     
