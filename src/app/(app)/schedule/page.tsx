@@ -25,18 +25,18 @@ export default function SchedulePage() {
   const firestore = useFirestore();
 
   const schedulesQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user?.uid) return null;
     return query(
       collectionGroup(firestore, 'feedingSchedules'),
       where('userId', '==', user.uid),
       orderBy('scheduledTime', 'asc')
     );
-  }, [user, firestore]);
+  }, [user?.uid, firestore]);
   
   const feedersQuery = useMemoFirebase(() => {
-    if (!user || !user.uid) return null;
+    if (!user?.uid) return null;
     return query(collection(firestore, `users/${user.uid}/feeders`));
-  }, [user, firestore]);
+  }, [user?.uid, firestore]);
 
   const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
   const { data: feeders, isLoading: areFeedersLoading } = useCollection(feedersQuery);
