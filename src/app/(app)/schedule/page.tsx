@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query, where, orderBy } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, orderBy } from 'firebase/firestore';
 import { PlusCircle } from 'lucide-react';
 
 export default function SchedulePage() {
@@ -35,7 +35,7 @@ export default function SchedulePage() {
   
   const feedersQuery = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collectionGroup(firestore, 'feeders'), where('userId', '==', user.uid));
+    return query(collection(firestore, `users/${user.uid}/feeders`));
   }, [user, firestore]);
 
   const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
