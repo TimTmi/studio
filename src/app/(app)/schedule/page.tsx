@@ -34,7 +34,7 @@ export default function SchedulePage() {
   }, [user, firestore]);
   
   const feedersQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !user.uid) return null;
     return query(collection(firestore, `users/${user.uid}/feeders`));
   }, [user, firestore]);
 
@@ -128,5 +128,3 @@ export default function SchedulePage() {
     </div>
   );
 }
-
-    
