@@ -1,0 +1,225 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile in the PetPal Hub application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user profile."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "settings": {
+          "type": "string",
+          "description": "User settings (can be stored as a JSON string)."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "Feeder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feeder",
+      "type": "object",
+      "description": "Represents a pet feeder managed by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feeder."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Feeder)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the feeder."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the feeder."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name"
+      ]
+    },
+    "FeedingSchedule": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FeedingSchedule",
+      "type": "object",
+      "description": "Represents a scheduled feeding event for a specific feeder.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feeding schedule."
+        },
+        "feederId": {
+          "type": "string",
+          "description": "Reference to Feeder. (Relationship: Feeder 1:N FeedingSchedule)"
+        },
+        "scheduledTime": {
+          "type": "string",
+          "description": "The time the feeder is scheduled to dispense food.",
+          "format": "date-time"
+        },
+        "portionSize": {
+          "type": "number",
+          "description": "The amount of food dispensed."
+        }
+      },
+      "required": [
+        "id",
+        "feederId",
+        "scheduledTime",
+        "portionSize"
+      ]
+    },
+    "FeedingLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FeedingLog",
+      "type": "object",
+      "description": "Represents a log entry for a feeding event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feeding log entry."
+        },
+        "feederId": {
+          "type": "string",
+          "description": "Reference to Feeder. (Relationship: Feeder 1:N FeedingLog)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The time the feeding event occurred.",
+          "format": "date-time"
+        },
+        "portionSize": {
+          "type": "number",
+          "description": "The amount of food dispensed."
+        }
+      },
+      "required": [
+        "id",
+        "feederId",
+        "timestamp",
+        "portionSize"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. This path establishes user ownership for all subcollections.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user.  Corresponds to the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/feeders/{feederId}",
+        "definition": {
+          "entityName": "Feeder",
+          "schema": {
+            "$ref": "#/backend/entities/Feeder"
+          },
+          "description": "Stores pet feeder information for a specific user. Path-based ownership ensures only the user can manage their feeders.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the feeder."
+            },
+            {
+              "name": "feederId",
+              "description": "The unique identifier for the feeder."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/feeders/{feederId}/feedingSchedules/{scheduleId}",
+        "definition": {
+          "entityName": "FeedingSchedule",
+          "schema": {
+            "$ref": "#/backend/entities/FeedingSchedule"
+          },
+          "description": "Stores feeding schedules for a specific feeder, owned by a user. Path-based ownership ensures only the user can manage their feeding schedules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the feeder."
+            },
+            {
+              "name": "feederId",
+              "description": "The unique identifier for the feeder."
+            },
+            {
+              "name": "scheduleId",
+              "description": "The unique identifier for the feeding schedule."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/feeders/{feederId}/feedingLogs/{logId}",
+        "definition": {
+          "entityName": "FeedingLog",
+          "schema": {
+            "$ref": "#/backend/entities/FeedingLog"
+          },
+          "description": "Stores feeding logs for a specific feeder, owned by a user. Path-based ownership ensures only the user can access their feeding logs.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns the feeder."
+            },
+            {
+              "name": "feederId",
+              "description": "The unique identifier for the feeder."
+            },
+            {
+              "name": "logId",
+              "description": "The unique identifier for the feeding log entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the PetPal Hub application, focusing on user authentication, feeder management, feeding schedules, and logs. The structure emphasizes authorization independence and straightforward security rules by denormalizing authorization data. Path-based ownership is used for user-specific data, ensuring only the owning user can access their resources. The structure also enables efficient `list` operations.\n\nAuthorization Independence is achieved by using path-based ownership. For example, feeders, feeding schedules, and feeding logs are stored under the `/users/{userId}` collection, eliminating the need for `get()` calls in security rules to verify ownership. This ensures atomic operations and easier debugging.\n\nThe design adheres to the principle of Structural Segregation by keeping user-specific data separate, ensuring each collection has a homogeneous security posture.\n\nThe structure supports the required QAPs by using path-based ownership, enabling secure `list` operations within each user's data. For instance, listing all feeders for a user is a simple query on the `/users/{userId}/feeders` collection."
+  }
+}
