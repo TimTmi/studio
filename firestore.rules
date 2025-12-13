@@ -131,10 +131,10 @@ service cloud.firestore {
     
     // Rule to allow collection group queries on 'feedingLogs' and 'feedingSchedules'
     match /{path=**}/feedingLogs/{logId} {
-       allow list: if isSignedIn() && request.auth.uid == resource.data.userId;
+       allow list: if isSignedIn();
     }
     match /{path=**}/feedingSchedules/{scheduleId} {
-       allow list: if isSignedIn() && request.auth.uid == resource.data.userId;
+       allow list: if isSignedIn();
     }
 
     /**
