@@ -9,9 +9,9 @@ export default function DashboardPage() {
   const firestore = useFirestore();
 
   const feedersQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user?.uid) return null;
     return query(collection(firestore, `users/${user.uid}/feeders`));
-  }, [user, firestore]);
+  }, [user?.uid, firestore]);
 
   const { data: feeders, isLoading: areFeedersLoading } = useCollection(feedersQuery);
 
