@@ -1,3 +1,5 @@
+'use client';
+import { useUser } from '@/firebase';
 import { Bone } from 'lucide-react';
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
@@ -9,12 +11,35 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading) {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center">
+            <Bone className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Or a redirect component
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>

@@ -1,4 +1,4 @@
-import { mockSchedules, mockFeeders } from '@/lib/data';
+'use client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,12 +16,36 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collectionGroup, query, where, orderBy } from 'firebase/firestore';
 import { PlusCircle } from 'lucide-react';
 
 export default function SchedulePage() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const schedulesQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(
+      collectionGroup(firestore, 'feedingSchedules'),
+      where('userId', '==', user.uid),
+      orderBy('scheduledTime', 'asc')
+    );
+  }, [user, firestore]);
+  
+  const feedersQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collectionGroup(firestore, 'feeders'), where('userId', '==', user.uid));
+  }, [user, firestore]);
+
+  const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
+  const { data: feeders, isLoading: areFeedersLoading } = useCollection(feedersQuery);
+  
   const getFeederName = (feederId: string) => {
-    return mockFeeders.find((f) => f.id === feederId)?.name || 'Unknown Feeder';
+    return feeders?.find((f) => f.id === feederId)?.name || 'Unknown Feeder';
   };
+
+  const isLoading = isUserLoading || areSchedulesLoading || areFeedersLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,27 +82,45 @@ export default function SchedulePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockSchedules.map((schedule) => (
-                <TableRow key={schedule.id}>
-                  <TableCell className="font-medium">
-                    {getFeederName(schedule.feederId)}
-                  </TableCell>
-                  <TableCell>{schedule.time}</TableCell>
-                  <TableCell>{schedule.amount} cups</TableCell>
-                  <TableCell className="flex gap-1">
-                    {schedule.days.map((day) => (
-                      <Badge key={day} variant="secondary">
-                        {day}
-                      </Badge>
-                    ))}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      Edit
-                    </Button>
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>Loading...</TableCell>
+                    <TableCell>...</TableCell>
+                    <TableCell>...</TableCell>
+                    <TableCell>...</TableCell>
+                    <TableCell className="text-right">...</TableCell>
+                  </TableRow>
+                ))
+              ) : schedules && schedules.length > 0 ? (
+                schedules.map((schedule) => (
+                  <TableRow key={schedule.id}>
+                    <TableCell className="font-medium">
+                      {getFeederName(schedule.feederId)}
+                    </TableCell>
+                    <TableCell>{schedule.scheduledTime}</TableCell>
+                    <TableCell>{schedule.portionSize} cups</TableCell>
+                    <TableCell className="flex gap-1">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                        <Badge key={day} variant="secondary">
+                          {day}
+                        </Badge>
+                      ))}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        Edit
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    No schedules found.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
