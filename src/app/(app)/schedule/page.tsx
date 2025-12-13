@@ -1,13 +1,13 @@
-'use client';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+"use client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,10 +15,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, collectionGroup } from 'firebase/firestore';
-import { PlusCircle } from 'lucide-react';
+} from "@/components/ui/table";
+import {
+  useUser,
+  useFirestore,
+  useCollection,
+  useMemoFirebase,
+} from "@/firebase";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  collectionGroup,
+} from "firebase/firestore";
+import { PlusCircle } from "lucide-react";
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -27,22 +38,24 @@ export default function SchedulePage() {
   const schedulesQuery = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return query(
-      collectionGroup(firestore, 'feedingSchedules'),
-      where('userId', '==', user.uid),
-      orderBy('scheduledTime', 'asc')
+      collectionGroup(firestore, "feedingSchedules"),
+      where("userId", "==", user.uid),
+      orderBy("scheduledTime", "asc")
     );
   }, [user?.uid, firestore]);
-  
+
   const feedersQuery = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return query(collection(firestore, `users/${user.uid}/feeders`));
   }, [user?.uid, firestore]);
 
-  const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
-  const { data: feeders, isLoading: areFeedersLoading } = useCollection(feedersQuery);
-  
+  const { data: schedules, isLoading: areSchedulesLoading } =
+    useCollection(schedulesQuery);
+  const { data: feeders, isLoading: areFeedersLoading } =
+    useCollection(feedersQuery);
+
   const getFeederName = (feederId: string) => {
-    return feeders?.find((f) => f.id === feederId)?.name || 'Unknown Feeder';
+    return feeders?.find((f) => f.id === feederId)?.name || "Unknown Feeder";
   };
 
   const isLoading = isUserLoading || areSchedulesLoading || areFeedersLoading;
@@ -101,11 +114,13 @@ export default function SchedulePage() {
                     <TableCell>{schedule.scheduledTime}</TableCell>
                     <TableCell>{schedule.portionSize} cups</TableCell>
                     <TableCell className="flex gap-1">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                        <Badge key={day} variant="secondary">
-                          {day}
-                        </Badge>
-                      ))}
+                      {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                        (day) => (
+                          <Badge key={day} variant="secondary">
+                            {day}
+                          </Badge>
+                        )
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm">
