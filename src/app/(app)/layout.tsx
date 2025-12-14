@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Bone } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AppLayout({
   children,
@@ -45,12 +46,10 @@ export default function AppLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex h-10 items-center gap-2 px-2">
-            <div className="flex h-6 w-8 items-center justify-center rounded-lg p-1.5">
-              <Image src="/icon.png" alt="FoodFPet Logo" width={20} height={20} />
-            </div>
+          <Link href="/dashboard" className="flex h-10 items-center gap-1 px-2">
+              <Image src="/icon.png" alt="FoodFPet Logo" width={35} height={35} />
             <span className="text-lg font-bold text-black text-primary">FoodFPet</span>
-          </div>
+          </Link>
         </SidebarHeader>
         <SidebarContent>
           <MainNav />
