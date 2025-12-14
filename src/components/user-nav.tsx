@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 
 import { useUser, useAuth } from '@/firebase';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,15 +26,8 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-          <Avatar className="h-9 w-9">
-            <AvatarImage 
-              src={user?.photoURL || ''} 
-              alt={user?.displayName || ''} 
-              data-ai-hint="person face"
-            />
-            <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
-          </Avatar>
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+            <UserIcon />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

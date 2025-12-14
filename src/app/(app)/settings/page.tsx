@@ -1,7 +1,6 @@
 'use client';
 import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -115,16 +114,6 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage 
-                    src={user?.photoURL || undefined} 
-                    alt={userProfile?.firstName || ''} 
-                    data-ai-hint="person face"
-                />
-                <AvatarFallback>{userProfile?.firstName?.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </div>
             <form onSubmit={handleProfileSave} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
