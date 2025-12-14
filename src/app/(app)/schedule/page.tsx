@@ -16,36 +16,42 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, collectionGroup } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { PlusCircle } from 'lucide-react';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const schedulesQuery = useMemoFirebase(() => {
+  const userProfileRef = useMemoFirebase(() => {
     if (!user?.uid) return null;
+    return doc(firestore, `users/${user.uid}`);
+  }, [user?.uid]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
+  const schedulesQuery = useMemoFirebase(() => {
+    if (!userProfile?.feederId) return null;
     return query(
-      collectionGroup(firestore, 'feedingSchedules'),
-      where('userId', '==', user.uid),
+      collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
       orderBy('scheduledTime', 'asc')
     );
-  }, [user?.uid, firestore]);
+  }, [userProfile?.feederId]);
   
-  const feedersQuery = useMemoFirebase(() => {
-    if (!user?.uid) return null;
-    return query(collection(firestore, `users/${user.uid}/feeders`));
-  }, [user?.uid, firestore]);
+  const feederRef = useMemoFirebase(() => {
+    if (!userProfile?.feederId) return null;
+    return doc(firestore, `feeders/${userProfile.feederId}`);
+  }, [userProfile?.feederId]);
 
   const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
-  const { data: feeders, isLoading: areFeedersLoading } = useCollection(feedersQuery);
+  const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
   
-  const getFeederName = (feederId: string) => {
-    return feeders?.find((f) => f.id === feederId)?.name || 'Unknown Feeder';
+  const getFeederName = () => {
+    return feeder?.name || 'Unknown Feeder';
   };
 
-  const isLoading = isUserLoading || areSchedulesLoading || areFeedersLoading;
+  const isLoading = isUserLoading || isProfileLoading || areSchedulesLoading || isFeederLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +102,7 @@ export default function SchedulePage() {
                 schedules.map((schedule) => (
                   <TableRow key={schedule.id}>
                     <TableCell className="font-medium">
-                      {getFeederName(schedule.feederId)}
+                      {getFeederName()}
                     </TableCell>
                     <TableCell>{schedule.scheduledTime}</TableCell>
                     <TableCell>{schedule.portionSize} cups</TableCell>

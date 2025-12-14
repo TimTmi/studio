@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { FormEvent, useEffect, useState } from 'react';
+import { Separator } from '@/components/ui/separator';
 
 export default function SettingsPage() {
     const { user, isUserLoading } = useUser();
@@ -23,17 +24,19 @@ export default function SettingsPage() {
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
         return doc(firestore, `users/${user.uid}`);
-    }, [user, firestore]);
+    }, [user]);
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [feederId, setFeederId] = useState('');
 
     useEffect(() => {
         if (userProfile) {
             setFirstName(userProfile.firstName || '');
             setLastName(userProfile.lastName || '');
+            setFeederId(userProfile.feederId || '');
         }
     }, [userProfile]);
 
@@ -43,6 +46,15 @@ export default function SettingsPage() {
             setDocumentNonBlocking(userProfileRef, {
                 firstName,
                 lastName,
+            }, { merge: true });
+        }
+    }
+    
+    const handleFeederSave = (e: FormEvent) => {
+        e.preventDefault();
+        if (userProfileRef) {
+            setDocumentNonBlocking(userProfileRef, {
+                feederId,
             }, { merge: true });
         }
     }
@@ -130,6 +142,20 @@ export default function SettingsPage() {
                 <Input id="email" type="email" defaultValue={user?.email || ''} disabled />
                 </div>
                 <Button type="submit">Save Changes</Button>
+            </form>
+            <Separator />
+            <div>
+                <h3 className="text-lg font-medium">Feeder Settings</h3>
+                <p className="text-sm text-muted-foreground">
+                    Link your pet feeder to your account using its unique ID.
+                </p>
+            </div>
+            <form onSubmit={handleFeederSave} className="space-y-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="feederId">Feeder ID</Label>
+                    <Input id="feederId" value={feederId} onChange={e => setFeederId(e.target.value)} placeholder="Enter your feeder ID" />
+                </div>
+                <Button type="submit">Save Feeder ID</Button>
             </form>
           </CardContent>
         </Card>

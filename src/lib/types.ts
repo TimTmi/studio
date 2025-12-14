@@ -6,11 +6,11 @@ export type UserProfile = {
   firstName: string;
   lastName: string;
   settings?: string;
+  feederId?: string;
 }
 
 export type Feeder = {
   id: string;
-  userId: string;
   name: string;
   location?: string;
   petType: 'dog' | 'cat';
@@ -25,7 +25,6 @@ export type Feeder = {
 export type FeedingSchedule = {
   id: string;
   feederId: string;
-  userId: string;
   scheduledTime: string;
   portionSize: number;
 };
@@ -33,7 +32,6 @@ export type FeedingSchedule = {
 export type FeedingLog = {
   id: string;
   feederId: string;
-  userId: string;
   feederName: string;
   timestamp: string | Timestamp;
   portionSize: number;

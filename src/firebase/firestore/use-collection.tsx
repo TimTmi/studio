@@ -85,22 +85,42 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
-        const path: string =
-          memoizedTargetRefOrQuery.type === 'collection'
-            ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
-
+        // If query/ref is gone or invalid, DO NOT fabricate a permission error
+        if (!memoizedTargetRefOrQuery) {
+          setError(error);
+          setData(null);
+          setIsLoading(false);
+          return;
+        }
+      
+        let path: string | null = null;
+      
+        try {
+          path =
+            memoizedTargetRefOrQuery.type === 'collection'
+              ? (memoizedTargetRefOrQuery as CollectionReference).path
+              : (memoizedTargetRefOrQuery as unknown as InternalQuery)
+                  ._query.path.canonicalString();
+        } catch {
+          path = null;
+        }
+      
+        // Still no path? Abort.
+        if (!path) {
+          setError(error);
+          setData(null);
+          setIsLoading(false);
+          return;
+        }
+      
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,
-        })
-
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
-
-        // trigger global error propagation
+        });
+      
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
         errorEmitter.emit('permission-error', contextualError);
       }
     );
