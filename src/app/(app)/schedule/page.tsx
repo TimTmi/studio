@@ -22,6 +22,7 @@ import { PlusCircle, Bone, Loader2 } from 'lucide-react';
 import { AddScheduleDialog } from '@/components/add-schedule-dialog';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { EditScheduleDialog } from '@/components/edit-schedule-dialog';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -125,9 +126,7 @@ export default function SchedulePage() {
                     <TableCell>{schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'PPP p')}</TableCell>
                     <TableCell>{schedule.portionSize} grams</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Edit
-                      </Button>
+                      <EditScheduleDialog schedule={schedule} />
                     </TableCell>
                   </TableRow>
                 ))
