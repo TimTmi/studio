@@ -3,14 +3,6 @@ import { useUser } from '@/firebase';
 import Image from 'next/image';
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Bone } from 'lucide-react';
@@ -43,28 +35,22 @@ export default function AppLayout({
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <Link href="/dashboard" className="flex h-10 items-center gap-1 px-2">
-              <Image src="/icon.png" alt="FoodFPet Logo" width={35} height={35} />
-            <span className="text-lg font-bold text-black text-primary">FoodFPet</span>
-          </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <MainNav />
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1">
-            {/* Can add breadcrumbs or page title here */}
-          </div>
-          <UserNav />
-        </header>
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="flex min-h-screen w-full flex-col">
+       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
+         <div className="container mx-auto flex h-16 items-center space-x-4 px-4 sm:justify-between sm:space-x-0">
+           <Link href="/dashboard" className="flex items-center gap-2">
+             <Image src="/icon.png" alt="Autofeeder Logo" width={30} height={30} />
+             <span className="text-lg font-bold text-primary">Autofeeder</span>
+           </Link>
+           <div className="flex flex-1 items-center justify-center space-x-6">
+              <MainNav />
+           </div>
+           <div className="flex items-center justify-end space-x-4">
+              <UserNav />
+           </div>
+         </div>
+       </header>
+       <main className="flex-1 p-4 sm:p-6">{children}</main>
+     </div>
   );
 }

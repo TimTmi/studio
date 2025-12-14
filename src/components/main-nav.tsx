@@ -12,39 +12,35 @@ import {
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
+
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/schedule', icon: Clock, label: 'Schedule' },
-  { href: '/logs', icon: BarChart3, label: 'Feeding Logs' },
-  { href: '/chatbot', icon: Bot, label: 'AI Assistant' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
+  { href: '/dashboard', label: 'Home' },
+  { href: '/schedule', label: 'Feeding Schedule' },
+  { href: '/logs', label: 'Feeding Log' },
+  { href: '/chatbot', label: 'AI' },
+  { href: '/settings', label: 'Settings' },
 ];
 
 export function MainNav() {
   const pathname = usePathname();
 
   return (
-    <SidebarMenu>
+    <nav className="hidden items-center space-x-1 md:flex">
       {navItems.map((item) => (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname === item.href}
-            tooltip={item.label}
-          >
-            <Link href={item.href}>
-              <item.icon />
-              <span>{item.label}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        <Link
+          key={item.href}
+          href={item.href}
+          className={cn(
+            'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+            pathname === item.href
+              ? 'bg-primary/90 text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          )}
+        >
+          {item.label}
+        </Link>
       ))}
-    </SidebarMenu>
+    </nav>
   );
 }
