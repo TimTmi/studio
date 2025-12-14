@@ -38,7 +38,7 @@ export default function AppLayout({
         <div className="flex min-h-screen w-full flex-col bg-background">
         
       {/* Header */}
-      <div className="px-6 pt-4">
+      <div className="px-10 pt-4">
         <header className="
           sticky top-4 z-40
           rounded-xl border
@@ -51,7 +51,7 @@ export default function AppLayout({
                 <Image src="/icon.png" alt="Autofeeder Logo" width={32} height={32} />
                 <span className="text-sm font-bold">FoodFPet</span>
               </Link>
-      
+
               <div className="flex items-center gap-6">
                 <MainNav />
                 <UserNav />
@@ -60,14 +60,14 @@ export default function AppLayout({
           </div>
         </header>
       </div>
-      
+
       {/* Main content */}
       <main className="flex-1">
         <div className="mx-auto w-full max-w-7xl px-6 py-6">
           {children}
         </div>
       </main>
-      
+
     </div>
   );
 }

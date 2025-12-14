@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const mqtt = require("mqtt");
+const cors = require('cors')({origin: true});
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -191,73 +192,74 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
   return null;
 });
 
+
 /**
- * Triggers when a new command is added to a feeder's 'commands' subcollection.
- * This function sends a command to the physical feeder via MQTT.
+ * An HTTP-callable function to trigger a manual feeding event.
  */
-exports.onCommandCreated = functions.firestore
-  .document('feeders/{feederId}/commands/{commandId}')
-  .onCreate(async (snap, context) => {
-    const commandData = snap.data();
-    const { feederId, commandId } = context.params;
+exports.manualFeed = functions.https.onRequest((req, res) => {
+    // Use CORS middleware to handle preflight and regular requests.
+    cors(req, res, async () => {
+        if (req.method !== 'POST') {
+            return res.status(405).send('Method Not Allowed');
+        }
 
-    functions.logger.info(`New command [${commandId}] for feeder [${feederId}]:`, commandData);
+        const { feederId, portionSize } = req.body;
 
-    if (commandData.command !== 'dispense' || !commandData.portionSize) {
-      functions.logger.warn("Invalid command received. Deleting from queue.", commandData);
-      return snap.ref.delete(); // Clean up invalid command
-    }
-    
-    const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
-    const commandPayload = JSON.stringify({
-      command: commandData.command,
-      portionSize: commandData.portionSize
-    });
+        if (!feederId || !portionSize) {
+            functions.logger.warn("Invalid manual feed request. Missing feederId or portionSize.", req.body);
+            return res.status(400).send('Missing feederId or portionSize.');
+        }
 
-    const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
-      username: mqttConfig.username,
-      password: mqttConfig.password,
-    });
+        const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
+        const commandPayload = JSON.stringify({
+            command: 'dispense',
+            portionSize: portionSize
+        });
 
-    const publishPromise = new Promise((resolve, reject) => {
-        publisher.on('connect', () => {
-            functions.logger.info(`[MQTT Publisher] Connected to send command for feeder: ${feederId}`);
-            publisher.publish(commandTopic, commandPayload, (err) => {
-                if (err) {
-                    functions.logger.error(`Failed to publish command to ${commandTopic}:`, err);
-                    publisher.end();
-                    reject(err);
-                } else {
-                    functions.logger.info(`Successfully published command to ${commandTopic}: ${commandPayload}`);
-                    publisher.end();
-                    resolve();
-                }
+        const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
+            username: mqttConfig.username,
+            password: mqttConfig.password,
+        });
+
+        const publishPromise = new Promise((resolve, reject) => {
+            publisher.on('connect', () => {
+                functions.logger.info(`[MQTT Publisher] Connected to send manual feed command for feeder: ${feederId}`);
+                publisher.publish(commandTopic, commandPayload, (err) => {
+                    if (err) {
+                        functions.logger.error(`Failed to publish command to ${commandTopic}:`, err);
+                        publisher.end();
+                        reject(err);
+                    } else {
+                        functions.logger.info(`Successfully published command to ${commandTopic}: ${commandPayload}`);
+                        publisher.end();
+                        resolve();
+                    }
+                });
+            });
+            publisher.on('error', (err) => {
+                functions.logger.error(`[MQTT Publisher] Connection error for ${feederId}:`, err);
+                publisher.end();
+                reject(err);
             });
         });
-        publisher.on('error', (err) => {
-            functions.logger.error(`[MQTT Publisher] Connection error for ${feederId}:`, err);
-            publisher.end();
-            reject(err);
-        });
+
+        try {
+            await publishPromise;
+            
+            // Log the successful feeding event
+            const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
+            await logRef.set({
+                feederId: feederId,
+                portionSize: portionSize,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                source: 'manual' // Indicates it came from "Feed Now"
+            });
+            
+            return res.status(200).send({ message: "Feed command sent successfully." });
+
+        } catch (error) {
+            functions.logger.error(`Error processing manual feed for feeder ${feederId}:`, error);
+            return res.status(500).send({ error: "Failed to send feed command." });
+        }
     });
-
-    try {
-        await publishPromise;
-        
-        // Log the successful feeding event
-        const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
-        await logRef.set({
-            feederId: feederId,
-            portionSize: commandData.portionSize,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            source: 'manual' // Indicates it came from "Feed Now"
-        });
-
-        // Clean up the command document after processing
-        return snap.ref.delete();
-    } catch (error) {
-        functions.logger.error(`Error processing command ${commandId} for feeder ${feederId}:`, error);
-        // Optionally, you could add retry logic or move to a "failed_commands" collection
-        return null;
-    }
 });

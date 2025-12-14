@@ -13,11 +13,11 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
 import type { Feeder } from '@/lib/types';
-import { Timestamp, collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import { useFirestore } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 type FeederCardProps = {
   feeder: Feeder;
@@ -75,7 +75,8 @@ const LevelBar = ({ label, value, icon, isLow }: { label: string; value: number;
 
 
 export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
-  const firestore = useFirestore();
+  const { toast } = useToast();
+  const [isFeeding, setIsFeeding] = useState(false);
   const isOnline = feeder.status === 'online';
   const bowlLevel = feeder.bowlLevel ?? 0;
   const storageLevelPercent = feeder.currentWeight ?? 0;
@@ -83,23 +84,49 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
   const isLowBowl = bowlLevel < 25;
   const isLowStorage = storageLevelPercent < 25;
 
-  const handleFeedNow = () => {
+  const handleFeedNow = async () => {
     if (!feeder.id) return;
-    const commandsCollectionRef = collection(firestore, `feeders/${feeder.id}/commands`);
-    const newCommand = {
-      command: 'dispense',
-      portionSize: 50, // Default for manual feed in grams
-      createdAt: serverTimestamp(),
-    };
-    // No need to await, the Cloud Function will handle it
-    addDoc(commandsCollectionRef, newCommand);
+    setIsFeeding(true);
+
+    try {
+      // Replace with your actual Cloud Function region and project ID
+      const res = await fetch('https://us-central1-studio-1400358527-eb8e5.cloudfunctions.net/manualFeed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          feederId: feeder.id,
+          portionSize: 50, // Default for manual feed
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Function returned error: ${res.status}`);
+      }
+      
+      toast({
+        title: "Dispensing food!",
+        description: "Your pet will be fed shortly.",
+      });
+
+    } catch (error) {
+      console.error("Error calling manualFeed function:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not trigger manual feeding.",
+      });
+    } finally {
+        setIsFeeding(false);
+    }
   };
 
   return (
     <Card className="flex w-full flex-col">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-primary">
             {feeder.petType === 'dog' ? <Dog /> : <Cat />}
             {feeder.name}
           </CardTitle>
@@ -131,9 +158,9 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
         </div>
       </CardContent>
       <CardFooter className="gap-2">
-        <Button className="w-full" disabled={!isOnline} onClick={handleFeedNow} variant="sage">
+        <Button className="w-full" disabled={!isOnline || isFeeding} onClick={handleFeedNow} variant="sage">
           <Bone className="mr-2" />
-          Feed Now
+          {isFeeding ? 'Feeding...' : 'Feed Now'}
         </Button>
         <Button asChild variant="outline" className="w-full" disabled={!isOnline}>
           <Link href="/schedule">
