@@ -97,7 +97,6 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
         },
         body: JSON.stringify({
           feederId: feeder.id,
-          portionSize: 50, // Default for manual feed
         }),
       });
 

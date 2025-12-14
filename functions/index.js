@@ -203,11 +203,12 @@ exports.manualFeed = functions.https.onRequest((req, res) => {
             return res.status(405).send('Method Not Allowed');
         }
 
-        const { feederId, portionSize } = req.body;
+        const { feederId } = req.body;
+        const portionSize = 50; // Default portion size for manual feed
 
-        if (!feederId || !portionSize) {
-            functions.logger.warn("Invalid manual feed request. Missing feederId or portionSize.", req.body);
-            return res.status(400).send('Missing feederId or portionSize.');
+        if (!feederId) {
+            functions.logger.warn("Invalid manual feed request. Missing feederId.", req.body);
+            return res.status(400).send('Missing feederId.');
         }
 
         const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
