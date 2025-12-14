@@ -7,6 +7,7 @@ import { Bone, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import type { Feeder } from '@/lib/types';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -18,6 +19,13 @@ export default function DashboardPage() {
   }, [firestore, user?.uid]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
+  const feederRef = useMemoFirebase(() => {
+    if (!userProfile?.feederId) return null;
+    return doc(firestore, `feeders/${userProfile.feederId}`);
+  }, [firestore, userProfile?.feederId]);
+  
+  const { data: feeder, isLoading: isFeederLoading } = useDoc<Feeder>(feederRef);
 
   const lastLogQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
@@ -64,7 +72,7 @@ export default function DashboardPage() {
     );
   }
   
-  const isDataLoading = isLastLogLoading || isSchedulesLoading;
+  const isDataLoading = isFeederLoading || isLastLogLoading || isSchedulesLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,10 +84,10 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {isDataLoading && !userProfile ?
+          {isDataLoading || !feeder ?
             <FeederCard.Skeleton /> :
             <FeederCard 
-              userProfile={userProfile}
+              feeder={feeder}
               lastFeedingTime={lastLog?.[0]?.timestamp}
               nextFeedingTime={schedules?.[0]?.scheduledTime}
             />

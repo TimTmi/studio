@@ -64,15 +64,7 @@ client.on("message", async (topic, message) => {
   }
 
   try {
-    const usersQuery = db.collection("users").where("feederId", "==", feederId).limit(1);
-    const snapshot = await usersQuery.get();
-
-    if (snapshot.empty) {
-      functions.logger.warn(`No user found for feederId: ${feederId}`);
-      return;
-    }
-
-    const userDoc = snapshot.docs[0];
+    const feederRef = db.collection("feeders").doc(feederId);
     let updateData = {};
 
     // Map MQTT metrics to Firestore fields
@@ -81,14 +73,16 @@ client.on("message", async (topic, message) => {
         updateData = { bowlLevel: parseFloat(payload) };
         break;
       case "storage/state":
+        // Assuming payload from device can be something that indicates online/offline state
         const status = (payload === "EMPTY" || payload === "LOW" || payload === "OK") ? "online" : "offline";
         updateData = { status: status };
         break;
+      // Add other metric mappings here
     }
 
     if (Object.keys(updateData).length > 0) {
-      await userDoc.ref.update(updateData);
-      functions.logger.info(`Updated Firestore for user ${userDoc.id} (feeder: ${feederId}) with:`, updateData);
+      await feederRef.update(updateData);
+      functions.logger.info(`Updated Firestore for feeder ${feederId} with:`, updateData);
     }
   } catch (error) {
     functions.logger.error(`Error updating Firestore for feeder ${feederId}:`, error);
@@ -114,6 +108,7 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
 
   try {
     const schedulesRef = db.collectionGroup('feedingSchedules');
+    // Find schedules due in the next minute that haven't been sent
     const query = schedulesRef
       .where('scheduledTime', '>=', now)
       .where('scheduledTime', '<', oneMinuteFromNow)
@@ -177,6 +172,7 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
         });
 
         Promise.all(promises).finally(() => {
+            // Give a moment for messages to publish before closing
             setTimeout(() => publisher.end(), 2000);
         });
     });

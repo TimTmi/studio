@@ -7,7 +7,11 @@ export type UserProfile = {
   lastName: string;
   settings?: string;
   feederId?: string;
-  // Feeder properties are now embedded
+}
+
+export type Feeder = {
+  id: string;
+  ownerId: string;
   name?: string;
   location?: string;
   petType?: 'dog' | 'cat';

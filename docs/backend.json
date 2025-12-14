@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user profile in the PetPal Hub application, including embedded feeder data.",
+      "description": "Represents a user profile in the PetPal Hub application.",
       "properties": {
         "id": {
           "type": "string",
@@ -30,6 +30,28 @@
         "feederId": {
           "type": "string",
           "description": "The ID of the single feeder linked to this user's account."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "Feeder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feeder",
+      "type": "object",
+      "description": "Represents a pet feeder device.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feeder."
+        },
+        "ownerId": {
+            "type": "string",
+            "description": "The UID of the user who owns this feeder."
         },
         "name": {
             "type": "string",
@@ -48,15 +70,11 @@
             "enum": ["online", "offline"]
         },
         "bowlLevel": {
-            "type": "number"
+            "type": "number",
+            "description": "Percentage of food remaining in the bowl."
         }
       },
-      "required": [
-        "id",
-        "email",
-        "firstName",
-        "lastName"
-      ]
+      "required": ["id", "ownerId", "name"]
     },
     "FeedingSchedule": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -74,12 +92,16 @@
         },
         "scheduledTime": {
           "type": "string",
-          "description": "The time the feeder is scheduled to dispense food.",
-          "format": "time"
+          "format": "date-time",
+          "description": "The date and time the feeder is scheduled to dispense food."
         },
         "portionSize": {
           "type": "number",
-          "description": "The amount of food dispensed."
+          "description": "The amount of food dispensed in grams."
+        },
+        "sent": {
+          "type": "boolean",
+          "description": "Indicates if the feeding command has been sent to the feeder."
         }
       },
       "required": [
@@ -110,7 +132,7 @@
         },
         "portionSize": {
           "type": "number",
-          "description": "The amount of food dispensed."
+          "description": "The amount of food dispensed in grams."
         }
       },
       "required": [
@@ -136,11 +158,27 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information, including the linked feeder ID and its properties.",
+          "description": "Stores user profile information.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user. Corresponds to the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/feeders/{feederId}",
+        "definition": {
+          "entityName": "Feeder",
+          "schema": {
+            "$ref": "#/backend/entities/Feeder"
+          },
+          "description": "Stores all data and state for a specific feeder device.",
+          "params": [
+             {
+              "name": "feederId",
+              "description": "The unique identifier for the feeder device."
             }
           ]
         }
@@ -152,7 +190,7 @@
           "schema": {
             "$ref": "#/backend/entities/FeedingSchedule"
           },
-          "description": "Stores feeding schedules for a specific feeder. The path exists for logical grouping but is secured by user profile.",
+          "description": "Stores feeding schedules for a specific feeder.",
           "params": [
             {
               "name": "feederId",
@@ -172,7 +210,7 @@
           "schema": {
             "$ref": "#/backend/entities/FeedingLog"
           },
-          "description": "Stores feeding logs for a specific feeder. The path exists for logical grouping but is secured by user profile.",
+          "description": "Stores feeding logs for a specific feeder.",
           "params": [
             {
               "name": "feederId",
@@ -186,6 +224,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is simplified to support one feeder per user. The `feederId` and all feeder properties are stored directly in the user's profile (`/users/{userId}`). This enforces a one-to-one relationship and simplifies security rules, as a user only needs access to their own profile document to get all relevant data. Subcollections for logs and schedules still use the feederId in their path for organizational purposes, but access is controlled via the user's profile."
+    "reasoning": "The data model is now normalized. User data is in `/users/{userId}`. Device data is in a separate top-level collection `/feeders/{feederId}`. The user's profile contains a `feederId` to link them to their device. This is a more scalable and maintainable structure."
   }
 }

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
-import type { UserProfile } from '@/lib/types';
+import type { Feeder } from '@/lib/types';
 import { Timestamp, collection, serverTimestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
@@ -21,7 +21,7 @@ import { useFirestore } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type FeederCardProps = {
-  userProfile: UserProfile;
+  feeder: Feeder;
   lastFeedingTime?: Timestamp;
   nextFeedingTime?: Timestamp;
 };
@@ -59,17 +59,17 @@ const TimeDisplay = ({ time, prefix }: { time?: Timestamp; prefix: string;}) => 
 };
 
 
-export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
+export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
   const firestore = useFirestore();
-  const isOnline = userProfile.status === 'online';
-  const bowlLevel = userProfile.bowlLevel ?? 0;
+  const isOnline = feeder.status === 'online';
+  const bowlLevel = feeder.bowlLevel ?? 0;
   const isLowFood = bowlLevel < 25;
 
   const handleFeedNow = () => {
-    if (!userProfile.feederId) return;
-    const logsCollectionRef = collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`);
+    if (!feeder.id) return;
+    const logsCollectionRef = collection(firestore, `feeders/${feeder.id}/feedingLogs`);
     const newLog = {
-      feederId: userProfile.feederId,
+      feederId: feeder.id,
       portionSize: 50, // Default for manual feed in grams
       timestamp: serverTimestamp(),
     };
@@ -81,12 +81,12 @@ export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: Fe
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle className="flex items-center gap-2">
-            {userProfile.petType === 'dog' ? <Dog /> : <Cat />}
-            {userProfile.name}
+            {feeder.petType === 'dog' ? <Dog /> : <Cat />}
+            {feeder.name}
           </CardTitle>
           <Badge variant={isOnline ? 'default' : 'destructive'} className="shrink-0">
             {isOnline ? <Power className="mr-1 h-3 w-3" /> : <PowerOff className="mr-1 h-3 w-3" />}
-            {userProfile.status}
+            {feeder.status}
           </Badge>
         </div>
         <CardDescription>Manage your pet's feeding schedule and monitor their food supply.</CardDescription>

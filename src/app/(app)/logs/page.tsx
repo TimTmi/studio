@@ -31,6 +31,13 @@ export default function LogsPage() {
   }, [firestore, user?.uid]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+  
+  const feederRef = useMemoFirebase(() => {
+    if (!userProfile?.feederId) return null;
+    return doc(firestore, `feeders/${userProfile.feederId}`);
+  }, [firestore, userProfile?.feederId]);
+  
+  const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
 
   const logsQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
@@ -98,7 +105,7 @@ export default function LogsPage() {
               ) : feedingLogs && feedingLogs.length > 0 ? (
                 feedingLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-medium">{userProfile?.name || 'My Feeder'}</TableCell>
+                    <TableCell className="font-medium">{feeder?.name || 'My Feeder'}</TableCell>
                     <TableCell>
                       {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>

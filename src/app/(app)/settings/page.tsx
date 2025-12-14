@@ -23,7 +23,7 @@ export default function SettingsPage() {
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
         return doc(firestore, `users/${user.uid}`);
-    }, [user]);
+    }, [user, firestore]);
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
@@ -51,9 +51,19 @@ export default function SettingsPage() {
     
     const handleFeederSave = (e: FormEvent) => {
         e.preventDefault();
-        if (userProfileRef) {
+        if (userProfileRef && feederId && user) {
+            // 1. Update the user's profile with the feederId
             setDocumentNonBlocking(userProfileRef, {
                 feederId,
+            }, { merge: true });
+            
+            // 2. Create or update the feeder document with the ownerId
+            const feederRef = doc(firestore, `feeders/${feederId}`);
+            setDocumentNonBlocking(feederRef, {
+                ownerId: user.uid,
+                id: feederId,
+                name: 'My Pet Feeder', // Default name
+                petType: 'cat', // Default petType
             }, { merge: true });
         }
     }

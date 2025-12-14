@@ -1,10 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to all documents for any signed-in user.
-    // This is insecure for a production app but useful for development.
-    match /{document=**} {
-      allow read, write;
+    
+    // Users can read and update their own profile.
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // A user can read/write to a feeder document if they are the owner.
+    match /feeders/{feederId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.feederId == feederId;
+    }
+    
+    // A user can read/write to a feeder's subcollections if they own the feeder.
+    match /feeders/{feederId}/{document=**} {
+       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.feederId == feederId;
     }
   }
 }
