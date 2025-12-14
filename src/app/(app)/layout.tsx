@@ -37,8 +37,8 @@ export default function AppLayout({
   return (
     <div className="flex min-h-screen w-full flex-col">
        <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
-         <div className="container mx-auto flex h-16 items-center space-x-4 px-4 sm:justify-between sm:space-x-0">
-           <Link href="/dashboard" className="flex items-center gap-2">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <Link href="/dashboard" className="flex items-center gap-2">
              <Image src="/icon.png" alt="Autofeeder Logo" width={40} height={40} />
              <span className="text-lg font-bold">Autofeeder</span>
            </Link>

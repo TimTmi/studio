@@ -10,18 +10,18 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-const db = admin.firestore();
+const FeedingLogDataSchema = z.object({
+    timestamp: z.string(),
+    portionSize: z.number(),
+});
+export type FeedingLogData = z.infer<typeof FeedingLogDataSchema>;
 
 
 const AIChatbotFeedingQueryInputSchema = z.object({
   query: z.string().describe('The query about pet feeding history.'),
-  feederId: z.string().optional().describe("The user's feeder ID. If not provided, the tool should ask the user for it."),
+  feederId: z.string().optional().describe("The user's feeder ID."),
+  feedingHistory: z.array(FeedingLogDataSchema).describe("An array of recent feeding log objects."),
 });
 export type AIChatbotFeedingQueryInput = z.infer<typeof AIChatbotFeedingQueryInputSchema>;
 
@@ -30,55 +30,6 @@ const AIChatbotFeedingQueryOutputSchema = z.object({
 });
 export type AIChatbotFeedingQueryOutput = z.infer<typeof AIChatbotFeedingQueryOutputSchema>;
 
-const getFeedingHistory = ai.defineTool({
-  name: 'getFeedingHistory',
-  description: 'Retrieves the feeding history for a specific feeder ID. The feeder ID is required.',
-  inputSchema: z.object({
-    feederId: z.string().describe('The ID of the feeder.'),
-  }),
-  outputSchema: z.array(z.object({
-    timestamp: z.string(),
-    portionSize: z.number(),
-  })),
-}, async ({ feederId }) => {
-  console.log(`Tool 'getFeedingHistory' called for feederId: ${feederId}`);
-
-  if (!feederId) {
-      throw new Error("Feeder ID is required to fetch feeding history.");
-  }
-  
-  try {
-    const logsRef = db.collection(`feeders/${feederId}/feedingLogs`);
-    // Get logs from the last 7 days for relevance
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const snapshot = await logsRef
-        .where('timestamp', '>=', sevenDaysAgo)
-        .orderBy('timestamp', 'desc')
-        .limit(50)
-        .get();
-
-    if (snapshot.empty) {
-      return [];
-    }
-
-    const logs = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        timestamp: data.timestamp.toDate().toISOString(),
-        portionSize: data.portionSize,
-      };
-    });
-    
-    return logs;
-  } catch (error) {
-      console.error("Error fetching feeding history from Firestore:", error);
-      // It's often better to return an empty array and let the LLM report that it couldn't find data
-      // than to throw an error that breaks the entire flow.
-      return [];
-  }
-});
 
 export async function aiChatbotFeedingQuery(input: AIChatbotFeedingQueryInput): Promise<AIChatbotFeedingQueryOutput> {
   return aiChatbotFeedingQueryFlow(input);
@@ -88,12 +39,11 @@ const prompt = ai.definePrompt({
   name: 'aiChatbotFeedingQueryPrompt',
   input: {schema: AIChatbotFeedingQueryInputSchema},
   output: {schema: AIChatbotFeedingQueryOutputSchema},
-  tools: [getFeedingHistory],
   prompt: `You are a helpful AI chatbot assistant for pet owners. Your task is to answer questions related to pet feeding history.
-  You MUST use the 'getFeedingHistory' tool to answer any questions about feeding amounts, times, or history.
-  The user's feeder ID is: {{{feederId}}}. You must pass this ID to the getFeedingHistory tool.
-  If the feederId is not available, you must ask the user to provide it.
-  Use the data returned from the tool to formulate a clear, friendly, and accurate response.
+  You have been provided with the user's recent feeding history in the 'feedingHistory' field.
+  Use this data to formulate a clear, friendly, and accurate response to the user's query.
+  If the feeding history is empty, inform the user that you couldn't find any recent feeding data.
+  Do not ask for a feeder ID, just use the data you've been given.
   Assume the current date is ${new Date().toDateString()}.
 
   Here is the user's query: {{{query}}}

@@ -1,14 +1,46 @@
 'use server';
 
-import { aiChatbotFeedingQuery } from "@/ai/flows/ai-chatbot-feeding-query";
+import { aiChatbotFeedingQuery, type FeedingLogData } from "@/ai/flows/ai-chatbot-feeding-query";
 import { getPetFeedingAdvice } from "@/ai/flows/ai-chatbot-general-pet-advice";
-import { getAuth } from "firebase-admin/auth";
-import { cookies } from "next/headers";
 import * as admin from 'firebase-admin';
 
+// This is safe to run on the server
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+const db = admin.firestore();
+
+
+async function getFeederLogs(feederId: string): Promise<FeedingLogData[]> {
+    if (!feederId) return [];
+    try {
+        const logsRef = db.collection(`feeders/${feederId}/feedingLogs`);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const snapshot = await logsRef
+            .where('timestamp', '>=', sevenDaysAgo)
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                timestamp: data.timestamp.toDate().toISOString(),
+                portionSize: data.portionSize,
+            };
+        });
+    } catch (error) {
+        console.error("Error fetching feeding history from Firestore:", error);
+        return [];
+    }
+}
+
 
 // This function will decide which AI flow to call based on the query.
 export async function getAiResponse(query: string, feederId: string | null) {
@@ -32,7 +64,12 @@ export async function getAiResponse(query: string, feederId: string | null) {
                 error: null,
             };
         }
-      result = await aiChatbotFeedingQuery({ query, feederId });
+      
+      // Fetch the data on the server before calling the AI
+      const feedingHistory = await getFeederLogs(feederId);
+
+      // Pass the fetched data to the AI flow
+      result = await aiChatbotFeedingQuery({ query, feederId, feedingHistory });
       return { response: result.response, error: null };
     } else {
       result = await getPetFeedingAdvice({ query });
