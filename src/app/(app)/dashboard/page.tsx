@@ -3,8 +3,10 @@ import { FeederCard } from '@/components/feeder-card';
 import { useDoc, useUser, useMemoFirebase, useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection, doc, limit, orderBy, query, where, Timestamp } from 'firebase/firestore';
-import { Bone } from 'lucide-react';
+import { Bone, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -61,26 +63,17 @@ export default function DashboardPage() {
     }
   }, [schedules]);
 
-  const isLoading = isUserLoading || isProfileLoading || isLastLogLoading || isSchedulesLoading;
+  const isLoading = isUserLoading || isProfileLoading;
 
-  if (isLoading && !userProfile) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Bone className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!userProfile) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
-        <h3 className="text-lg font-semibold">Loading Profile...</h3>
-        <p className="mb-4 text-sm text-muted-foreground">Just a moment while we fetch your details.</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
   
-  if (!userProfile.feederId) {
+  if (!userProfile?.feederId) {
     return (
        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
             <h3 className="text-lg font-semibold">No Feeder Linked</h3>
@@ -91,6 +84,8 @@ export default function DashboardPage() {
         </div>
     );
   }
+  
+  const isDataLoading = isLastLogLoading || isSchedulesLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,11 +97,14 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <FeederCard 
-            userProfile={userProfile}
-            lastFeedingTime={lastLog?.[0]?.timestamp}
-            nextFeedingTime={nextFeeding?.scheduledTime}
-          />
+          {isDataLoading && !userProfile ?
+            <FeederCard.Skeleton /> :
+            <FeederCard 
+              userProfile={userProfile}
+              lastFeedingTime={lastLog?.[0]?.timestamp}
+              nextFeedingTime={nextFeeding?.scheduledTime}
+            />
+          }
       </div>
     </div>
   );

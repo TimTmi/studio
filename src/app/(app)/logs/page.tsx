@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FeedingLogChart } from '@/components/feeding-log-chart';
-import { CheckCircle2, XCircle, Bone } from 'lucide-react';
+import { CheckCircle2, XCircle, Bone, Loader2 } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 
@@ -34,11 +34,6 @@ export default function LogsPage() {
 
   const logsQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
-    // Note: The path to subcollections remains the same even if the parent collection is gone.
-    // Firestore paths are just strings. We assume a 'feedingLogs' subcollection still exists under the user's feeder.
-    // In a real scenario with the new model, logs might be stored differently.
-    // For now, we query a hypothetical path. A better structure would be `/users/{userId}/feedingLogs`.
-    // To keep the change minimal, we'll use the existing feederId to construct the old path.
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`),
       orderBy('timestamp', 'desc'),
@@ -50,10 +45,10 @@ export default function LogsPage() {
   
   const isLoading = isUserLoading || isProfileLoading || areLogsLoading;
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Bone className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -82,17 +77,15 @@ export default function LogsPage() {
               <TableRow>
                 <TableHead>Feeder</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {areLogsLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">Loading...</TableCell>
                     <TableCell>Loading...</TableCell>
-                    <TableCell>...</TableCell>
                     <TableCell className="text-right">...</TableCell>
                   </TableRow>
                 ))
@@ -103,21 +96,12 @@ export default function LogsPage() {
                     <TableCell>
                       {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>
-                    <TableCell>{log.portionSize} cups</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={(log as any).status === 'success' ? 'default' : 'destructive'}>
-                          {(log as any).status === 'success' ? 
-                              <CheckCircle2 className="mr-1 h-3 w-3" /> :
-                              <XCircle className="mr-1 h-3 w-3" />
-                          }
-                        {(log as any).status}
-                      </Badge>
-                    </TableCell>
+                    <TableCell className="text-right">{log.portionSize} cups</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     No feeding logs found.
                   </TableCell>
                 </TableRow>

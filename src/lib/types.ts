@@ -25,11 +25,9 @@ export type FeedingSchedule = {
 export type FeedingLog = {
   id: string;
   feederId: string;
-  feederName: string;
   timestamp: Timestamp;
   portionSize: number;
   amount: number; // for chart
-  status: 'success' | 'failed';
 };
 
 // Legacy type from mock data, can be removed once all components are updated
@@ -52,5 +50,3 @@ export type Schedule = {
   amount: number; // in cups
   days: string[];
 };
-
-    
