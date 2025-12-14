@@ -58,8 +58,8 @@ export default function SettingsPage() {
             setDocumentNonBlocking(feederDocRef, {
                 ownerId: user.uid,
                 id: feederId,
-                name: 'My Pet Feeder', // Default name
-                petType: 'cat', // Default petType
+                name: "Pet's name", 
+                petType: 'cat', 
             }, { merge: true });
         }
     }

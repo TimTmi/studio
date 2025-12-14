@@ -23,6 +23,7 @@ import { AddScheduleDialog } from '@/components/add-schedule-dialog';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { EditScheduleDialog } from '@/components/edit-schedule-dialog';
+import type { Feeder } from '@/lib/types';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -34,6 +35,13 @@ export default function SchedulePage() {
   }, [firestore, user?.uid]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
+  const feederRef = useMemoFirebase(() => {
+    if (!userProfile?.feederId) return null;
+    return doc(firestore, `feeders/${userProfile.feederId}`);
+  }, [firestore, userProfile?.feederId]);
+
+  const { data: feeder, isLoading: isFeederLoading } = useDoc<Feeder>(feederRef);
 
   const schedulesQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
@@ -77,6 +85,8 @@ export default function SchedulePage() {
     );
   }
 
+  const isLoading = areSchedulesLoading || isFeederLoading;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -108,7 +118,7 @@ export default function SchedulePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {areSchedulesLoading ? (
+              {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>Loading...</TableCell>
@@ -121,7 +131,7 @@ export default function SchedulePage() {
                 schedules.map((schedule) => (
                   <TableRow key={schedule.id}>
                     <TableCell className="font-medium">
-                      {userProfile?.name || 'My Feeder'}
+                      {feeder?.name || 'My Feeder'}
                     </TableCell>
                     <TableCell>{schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'PPP p')}</TableCell>
                     <TableCell>{schedule.portionSize} grams</TableCell>
