@@ -1,5 +1,5 @@
 'use client';
-import { Bone, Cat, Dog, Power, Zap, ZapOff } from 'lucide-react';
+import { Bone, Cat, Dog, Power, PowerOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +33,7 @@ export function FeederCard({ userProfile }: FeederCardProps) {
             {userProfile.name}
           </CardTitle>
           <Badge variant={isOnline ? 'default' : 'destructive'} className="shrink-0">
-            {isOnline ? <Zap className="mr-1 h-3 w-3" /> : <ZapOff className="mr-1 h-3 w-3" />}
+            {isOnline ? <Power className="mr-1 h-3 w-3" /> : <PowerOff className="mr-1 h-3 w-3" />}
             {userProfile.status}
           </Badge>
         </div>
