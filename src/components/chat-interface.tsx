@@ -47,53 +47,50 @@ export function ChatInterface() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const processQuery = (query: string) => {
+     if (!query.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now(),
+      role: 'user',
+      text: query,
+    };
+
+    const thinkingMessage: Message = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        text: 'Thinking...',
+    };
+
+    setMessages((prev) => [...prev, userMessage, thinkingMessage]);
+
      startTransition(async () => {
        const feederId = userProfile?.feederId || null;
-       const thinkingMessage: Message = {
-         id: Date.now(),
-         role: 'assistant',
-         text: 'Thinking...',
-       };
-       setMessages((prev) => [...prev, thinkingMessage]);
-
+       
        const { response } = await getAiResponse(query, feederId);
        
        const assistantMessage: Message = {
-         id: Date.now() + 1,
+         id: Date.now() + 1, // Same ID as thinking message to replace it
          role: 'assistant',
          text: response,
        };
        
-       setMessages((prev) => [...prev.filter(m => m.id !== thinkingMessage.id), assistantMessage]);
+       setMessages((prev) => 
+        // Replace the thinking message with the actual response
+        prev.map(m => m.id === thinkingMessage.id ? assistantMessage : m)
+       );
     });
   }
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isPending) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      role: 'user',
-      text: input,
-    };
-    setMessages((prev) => [...prev, userMessage]);
     const query = input;
     setInput('');
-
     processQuery(query);
   };
 
   const handleSuggestedQuestion = (question: string) => {
     if (isPending) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      role: 'user',
-      text: question,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    
     processQuery(question);
   };
 
@@ -105,7 +102,7 @@ export function ChatInterface() {
         behavior: 'smooth',
       });
     }
-  }, [messages, isPending]);
+  }, [messages]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
@@ -152,19 +149,6 @@ export function ChatInterface() {
               )}
             </div>
           ))}
-          {isPending && messages[messages.length-1]?.text !== 'Thinking...' && (
-             <div className="flex items-start gap-4">
-                 <Avatar className="h-9 w-9 border">
-                  <AvatarFallback>
-                    <Bot />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="max-w-md rounded-lg bg-muted p-3 text-sm flex items-center">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    <span>Thinking...</span>
-                </div>
-             </div>
-          )}
         </div>
       </ScrollArea>
 
