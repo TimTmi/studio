@@ -34,7 +34,7 @@ export function MainNav() {
           className={cn(
             'rounded-md px-3 py-2 text-sm font-medium transition-colors',
             pathname === item.href
-              ? 'bg-primary/90 text-primary-foreground'
+              ? 'bg-[#cbb49f] text-white'
               : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
           )}
         >

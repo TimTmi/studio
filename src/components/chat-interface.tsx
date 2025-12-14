@@ -18,11 +18,16 @@ type Message = {
   text: string;
 };
 
-const suggestedQuestions = [
-    "How much did my pet eat today?",
-    "What was the last feeding time?",
-    "Are there any feedings scheduled for tomorrow?",
-    "Summarize last week's feeding activity.",
+type SuggestedQuestion = {
+    key: string;
+    text: string;
+}
+
+const suggestedQuestions: SuggestedQuestion[] = [
+    { key: "EAT_TODAY", text: "How much did my pet eat today?" },
+    { key: "LAST_FEEDING", text: "What was the last feeding time?" },
+    { key: "SCHEDULE_TOMORROW", text: "Are there any feedings scheduled for tomorrow?" },
+    { key: "SUMMARY_LAST_WEEK", text: "Summarize last week's feeding activity." },
 ];
 
 export function ChatInterface() {
@@ -46,13 +51,13 @@ export function ChatInterface() {
   const [isPending, startTransition] = useTransition();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const processQuery = (query: string) => {
-     if (!query.trim()) return;
+  const processQuery = (userQuery: string, questionKey?: string) => {
+     if (!userQuery.trim()) return;
 
     const userMessage: Message = {
       id: Date.now(),
       role: 'user',
-      text: query,
+      text: userQuery,
     };
 
     const thinkingMessage: Message = {
@@ -66,7 +71,7 @@ export function ChatInterface() {
      startTransition(async () => {
        const feederId = userProfile?.feederId || null;
        
-       const { response } = await getAiResponse(query, feederId);
+       const { response } = await getAiResponse(userQuery, feederId, questionKey);
        
        const assistantMessage: Message = {
          id: Date.now() + 1, // Same ID as thinking message to replace it
@@ -89,9 +94,9 @@ export function ChatInterface() {
     processQuery(query);
   };
 
-  const handleSuggestedQuestion = (question: string) => {
+  const handleSuggestedQuestion = (question: SuggestedQuestion) => {
     if (isPending) return;
-    processQuery(question);
+    processQuery(question.text, question.key);
   };
 
 
@@ -155,8 +160,8 @@ export function ChatInterface() {
       <div className="border-t p-4">
         <div className="mb-2 flex flex-wrap gap-2">
             {suggestedQuestions.map((q) => (
-                <Button key={q} variant="outline" size="sm" onClick={() => handleSuggestedQuestion(q)} disabled={isPending}>
-                    {q}
+                <Button key={q.key} variant="outline" size="sm" onClick={() => handleSuggestedQuestion(q)} disabled={isPending}>
+                    {q.text}
                 </Button>
             ))}
         </div>
