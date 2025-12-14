@@ -102,15 +102,18 @@ export function ChatInterface() {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+      const scrollableView = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollableView) {
+          scrollableView.scrollTo({
+          top: scrollableView.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
     }
   }, [messages]);
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
+    <div className="flex h-full flex-col">
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 p-4">
           {messages.map((message) => (
