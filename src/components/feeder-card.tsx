@@ -96,7 +96,7 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
   };
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex w-full flex-col">
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle className="flex items-center gap-2">

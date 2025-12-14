@@ -83,14 +83,19 @@ export default function DashboardPage() {
         </p>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex justify-center">
           {isDataLoading || !feeder ?
-            <FeederCard.Skeleton /> :
-            <FeederCard 
-              feeder={feeder}
-              lastFeedingTime={lastLog?.[0]?.timestamp}
-              nextFeedingTime={schedules?.[0]?.scheduledTime}
-            />
+            <div className="w-full max-w-sm">
+              <FeederCard.Skeleton />
+            </div>
+             :
+            <div className="w-full max-w-sm">
+              <FeederCard 
+                feeder={feeder}
+                lastFeedingTime={lastLog?.[0]?.timestamp}
+                nextFeedingTime={schedules?.[0]?.scheduledTime}
+              />
+            </div>
           }
       </div>
     </div>
