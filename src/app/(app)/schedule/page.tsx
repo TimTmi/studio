@@ -38,7 +38,7 @@ export default function SchedulePage() {
     if (!userProfile?.feederId) return null;
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
-      where('scheduledTime', '>=', Timestamp.now()),
+      where('sent', '==', false),
       orderBy('scheduledTime', 'asc')
     );
   }, [firestore, userProfile?.feederId]);

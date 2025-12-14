@@ -114,7 +114,10 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
 
   try {
     const schedulesRef = db.collectionGroup('feedingSchedules');
-    const query = schedulesRef.where('scheduledTime', '>=', now).where('scheduledTime', '<', oneMinuteFromNow);
+    const query = schedulesRef
+      .where('scheduledTime', '>=', now)
+      .where('scheduledTime', '<', oneMinuteFromNow)
+      .where('sent', '==', false);
     const snapshot = await query.get();
 
     if (snapshot.empty) {
@@ -162,9 +165,9 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
                             functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
                         });
 
-                        // After dispensing, delete the one-time schedule
-                        doc.ref.delete().catch(deleteErr => {
-                            functions.logger.error(`Failed to delete schedule ${doc.id}:`, deleteErr);
+                        // After dispensing, update the schedule to mark it as sent
+                        doc.ref.update({ sent: true }).catch(updateErr => {
+                            functions.logger.error(`Failed to update schedule ${doc.id}:`, updateErr);
                         });
                         resolve();
                     }

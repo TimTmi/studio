@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useFirestore } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
+import { collection, Timestamp } from 'firebase/firestore';
 import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -65,7 +65,9 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
     );
     const newSchedule = {
       ...data,
+      scheduledTime: Timestamp.fromDate(data.scheduledTime),
       feederId,
+      sent: false, // Initialize 'sent' to false
     };
     addDocumentNonBlocking(schedulesCollectionRef, newSchedule);
     form.reset();
