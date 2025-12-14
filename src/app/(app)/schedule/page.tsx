@@ -18,7 +18,9 @@ import {
 } from '@/components/ui/table';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
-import { PlusCircle, Bone } from 'lucide-react';
+import { PlusCircle, Bone, Loader2 } from 'lucide-react';
+import { AddScheduleDialog } from '@/components/add-schedule-dialog';
+import Link from 'next/link';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -33,8 +35,6 @@ export default function SchedulePage() {
 
   const schedulesQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
-    // See note in logs/page.tsx about this path.
-    // A better structure would be `/users/{userId}/feedingSchedules`.
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
       orderBy('scheduledTime', 'asc')
@@ -43,12 +43,26 @@ export default function SchedulePage() {
   
   const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
   
-  const isLoading = isUserLoading || isProfileLoading || areSchedulesLoading;
+  const isLoading = isUserLoading || isProfileLoading;
   
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Bone className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!userProfile?.feederId) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
+        <h3 className="text-lg font-semibold">No Feeder Linked</h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          You need to link a feeder on the settings page before you can add schedules.
+        </p>
+        <Button asChild>
+          <Link href="/settings">Go to Settings</Link>
+        </Button>
       </div>
     );
   }
@@ -70,10 +84,7 @@ export default function SchedulePage() {
                 A list of all currently active feeding schedules.
               </CardDescription>
             </div>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Schedule
-            </Button>
+            <AddScheduleDialog feederId={userProfile.feederId} />
           </div>
         </CardHeader>
         <CardContent>
@@ -88,7 +99,7 @@ export default function SchedulePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {areSchedulesLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>Loading...</TableCell>
