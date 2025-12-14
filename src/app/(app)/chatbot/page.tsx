@@ -7,7 +7,7 @@ export default function ChatbotPage() {
             <div className="mb-6">
                 <h1 className="text-2xl font-bold tracking-tight">AI Assistant</h1>
                 <p className="text-muted-foreground">
-                    Get instant answers and advice about your pet's feeding.
+                    Talk to our AI assistant to get answers for you and your pet!
                 </p>
             </div>
             <Card className="flex-1 overflow-hidden">

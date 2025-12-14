@@ -71,7 +71,7 @@ export default function LogsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Feeding Logs</h1>
         <p className="text-muted-foreground">
-          Review your pet's feeding history and analytics.
+          Your pet's feeding history and analytics.
         </p>
       </div>
 

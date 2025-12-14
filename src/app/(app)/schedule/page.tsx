@@ -92,16 +92,16 @@ export default function SchedulePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Feeding Schedules</h1>
         <p className="text-muted-foreground">
-          View and manage the automated feeding schedules for your pets.
+          Create a feeding schedule personalized for your pet!
         </p>
       </div>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <CardTitle>Upcoming Schedules</CardTitle>
               <CardDescription>
-                A list of all currently active feeding schedules.
+               Currently active feeding schedules.
               </CardDescription>
             </div>
             <AddScheduleDialog feederId={userProfile.feederId} />

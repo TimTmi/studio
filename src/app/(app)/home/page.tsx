@@ -79,7 +79,7 @@ export default function HomePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Home</h1>
         <p className="text-muted-foreground">
-          Here's an overview of your pet feeder.
+          Manage your pet's feeding at a glance!
         </p>
       </div>
       
