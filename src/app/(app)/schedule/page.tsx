@@ -98,7 +98,7 @@ export default function SchedulePage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex flex-col gap-1">
               <CardTitle>Upcoming Schedules</CardTitle>
               <CardDescription>
                 A list of all currently active feeding schedules.
