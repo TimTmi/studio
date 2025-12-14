@@ -19,7 +19,7 @@ const navItems = [
   { href: '/home', label: 'Home' },
   { href: '/schedule', label: 'Feeding Schedule' },
   { href: '/logs', label: 'Feeding Log' },
-  { href: '/chatbot', label: 'AI Assistant', icon: Leaf },
+  { href: '/chatbot', label: 'AI Assistant' },
   { href: '/settings', label: 'Settings' },
 ];
 

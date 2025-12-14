@@ -78,7 +78,7 @@ export default function SettingsPage() {
                 <div className="grid gap-6 lg:grid-cols-3">
                     <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Profile</CardTitle>
+                        <CardTitle className="text-primary">Profile</CardTitle>
                         <CardDescription>
                         This is how others will see you on the site.
                         </CardDescription>
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                     </Card>
                     <Card>
                     <CardHeader>
-                        <CardTitle>Notifications</CardTitle>
+                        <CardTitle className="text-primary">Notifications</CardTitle>
                         <CardDescription>
                         Manage how you receive notifications.
                         </CardDescription>
@@ -114,7 +114,7 @@ export default function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
+            <CardTitle className="text-primary">Profile</CardTitle>
             <CardDescription>
               Manage your account settings.
             </CardDescription>
@@ -150,7 +150,7 @@ export default function SettingsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Notifications</CardTitle>
+            <CardTitle className="text-primary">Notifications</CardTitle>
             <CardDescription>
               Manage how you receive notifications.
             </CardDescription>

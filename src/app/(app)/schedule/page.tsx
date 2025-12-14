@@ -99,7 +99,7 @@ export default function SchedulePage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-2">
-              <CardTitle>Upcoming Schedules</CardTitle>
+              <CardTitle className="text-primary">Upcoming Schedules</CardTitle>
               <CardDescription>
                Currently active feeding schedules.
               </CardDescription>

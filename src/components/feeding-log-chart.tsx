@@ -61,7 +61,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Feeding Analytics</CardTitle>
+                <CardTitle className="text-primary">Feeding Analytics</CardTitle>
                 <CardDescription>Total food dispensed (in grams) over the last 7 days.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -74,7 +74,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Feeding Analytics</CardTitle>
+        <CardTitle className="text-primary">Feeding Analytics</CardTitle>
         <CardDescription>Total food dispensed (in grams) over the last 7 days.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -83,7 +83,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
             config={{
                 amount: {
                 label: 'Grams',
-                color: 'hsl(var(--primary))',
+                color: 'hsl(var(--chart-1))',
                 },
             }}
             className="h-full w-full"

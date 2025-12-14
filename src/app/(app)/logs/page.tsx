@@ -79,7 +79,7 @@ export default function LogsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Feedings</CardTitle>
+          <CardTitle className="text-primary">Recent Feedings</CardTitle>
           <CardDescription>
             A log of the most recent feeding events from your device.
           </CardDescription>
