@@ -35,20 +35,39 @@ export default function AppLayout({
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-       <header className="sticky top-0 z-40 w-full border-b bg-header-background shadow-lg">
-        <div className="flex h-16 w-full items-center justify-between px-7">
-          <Link href="/home" className="flex items-center gap-2">
-             <Image src="/icon.png" alt="Autofeeder Logo" width={40} height={40} />
-             <span className="text-lg font-bold">FoodFPet</span>
-           </Link>
-           <div className="flex flex-1 items-center justify-end space-x-4">
-              <MainNav />
-              <UserNav />
-           </div>
-         </div>
-       </header>
-       <main className="flex-1 p-4 sm:p-6">{children}</main>
-     </div>
+        <div className="flex min-h-screen w-full flex-col bg-background">
+        
+      {/* Header */}
+      <div className="px-6 pt-4">
+        <header className="
+          sticky top-4 z-40
+          rounded-xl border
+          bg-header-background
+          shadow-[0_4px_16px_rgba(80,140,120,0.15)]
+        ">
+          <div className="mx-auto w-full px-6">
+            <div className="flex h-16 items-center justify-between">
+              <Link href="/home" className="flex items-center gap-2">
+                <Image src="/icon.png" alt="Autofeeder Logo" width={32} height={32} />
+                <span className="text-sm font-bold">FoodFPet</span>
+              </Link>
+      
+              <div className="flex items-center gap-6">
+                <MainNav />
+                <UserNav />
+              </div>
+            </div>
+          </div>
+        </header>
+      </div>
+      
+      {/* Main content */}
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-7xl px-6 py-6">
+          {children}
+        </div>
+      </main>
+      
+    </div>
   );
 }
