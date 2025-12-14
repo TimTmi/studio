@@ -65,7 +65,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
                 <CardDescription>Total food dispensed (in grams) over the last 7 days.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Skeleton className="h-[200px] w-full" />
+                <Skeleton className="h-[250px] w-full" />
             </CardContent>
         </Card>
     )
@@ -78,37 +78,39 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
         <CardDescription>Total food dispensed (in grams) over the last 7 days.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer
-          config={{
-            amount: {
-              label: 'Grams',
-              color: 'hsl(var(--primary))',
-            },
-          }}
-          className="min-h-[200px] w-full"
-        >
-          <BarChart accessibilityLayer data={chartData}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 6)}
-            />
-            <YAxis
+        <div className="h-[250px] w-full">
+            <ChartContainer
+            config={{
+                amount: {
+                label: 'Grams',
+                color: 'hsl(var(--primary))',
+                },
+            }}
+            className="h-full w-full"
+            >
+            <BarChart accessibilityLayer data={chartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                dataKey="date"
                 tickLine={false}
-                axisLine={false}
                 tickMargin={10}
-                unit="g"
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="dot" />}
-            />
-            <Bar dataKey="amount" fill="var(--color-amount)" radius={4} />
-          </BarChart>
-        </ChartContainer>
+                axisLine={false}
+                tickFormatter={(value) => value.slice(0, 6)}
+                />
+                <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={10}
+                    unit="g"
+                />
+                <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar dataKey="amount" fill="var(--color-amount)" radius={4} />
+            </BarChart>
+            </ChartContainer>
+        </div>
       </CardContent>
     </Card>
   );
