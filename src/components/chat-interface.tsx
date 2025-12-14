@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firestore/lite';
+import { doc } from 'firebase/firestore';
 
 type Message = {
   id: number;
