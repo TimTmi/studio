@@ -32,36 +32,15 @@ export default function DashboardPage() {
 
   const nextScheduleQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
-    // We can't directly query for time in the future with composite HH:mm format.
-    // This fetches all and we find the next one on the client.
-    // For a production app, storing scheduled times as UTC timestamps for the next event would be better.
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
-      orderBy('scheduledTime', 'asc')
+      where('scheduledTime', '>=', Timestamp.now()),
+      orderBy('scheduledTime', 'asc'),
+      limit(1)
     );
   }, [firestore, userProfile?.feederId]);
 
   const { data: schedules, isLoading: isSchedulesLoading } = useCollection(nextScheduleQuery);
-
-  const [nextFeeding, setNextFeeding] = useState<{ scheduledTime: string; portionSize: number } | null>(null);
-
-  useEffect(() => {
-    if (schedules) {
-      const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      
-      const futureSchedules = schedules.filter(s => s.scheduledTime > currentTime);
-      
-      if (futureSchedules.length > 0) {
-        setNextFeeding(futureSchedules[0]);
-      } else if (schedules.length > 0) {
-        // If no future schedules for today, the next one is the first one tomorrow
-        setNextFeeding(schedules[0]);
-      } else {
-        setNextFeeding(null);
-      }
-    }
-  }, [schedules]);
 
   const isLoading = isUserLoading || isProfileLoading;
 
@@ -102,7 +81,7 @@ export default function DashboardPage() {
             <FeederCard 
               userProfile={userProfile}
               lastFeedingTime={lastLog?.[0]?.timestamp}
-              nextFeedingTime={nextFeeding?.scheduledTime}
+              nextFeedingTime={schedules?.[0]?.scheduledTime}
             />
           }
       </div>

@@ -23,10 +23,10 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 type FeederCardProps = {
   userProfile: UserProfile;
   lastFeedingTime?: Timestamp;
-  nextFeedingTime?: string;
+  nextFeedingTime?: Timestamp;
 };
 
-const TimeDisplay = ({ time, prefix, isTimeInFuture = false }: { time?: Timestamp | string; prefix: string; isTimeInFuture?: boolean }) => {
+const TimeDisplay = ({ time, prefix }: { time?: Timestamp; prefix: string;}) => {
     const [relativeTime, setRelativeTime] = useState('');
 
     useEffect(() => {
@@ -38,22 +38,8 @@ const TimeDisplay = ({ time, prefix, isTimeInFuture = false }: { time?: Timestam
                 return;
             }
 
-            let dateToCompare: Date;
-
-            if (typeof time === 'string') { // It's a "HH:mm" schedule string
-                const [hours, minutes] = time.split(':').map(Number);
-                const now = new Date();
-                dateToCompare = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
-                
-                // If the time is in the past for today, it must be for tomorrow
-                if (isTimeInFuture && dateToCompare < now) {
-                    dateToCompare.setDate(dateToCompare.getDate() + 1);
-                }
-            } else { // It's a Firestore Timestamp
-                dateToCompare = time.toDate();
-            }
-            
-            setRelativeTime(formatDistanceToNow(dateToCompare, { addSuffix: !isTimeInFuture }));
+            const dateToCompare = time.toDate();
+            setRelativeTime(formatDistanceToNow(dateToCompare, { addSuffix: true }));
         };
 
         updateRelativeTime();
@@ -61,7 +47,7 @@ const TimeDisplay = ({ time, prefix, isTimeInFuture = false }: { time?: Timestam
         intervalId = setInterval(updateRelativeTime, 60000); 
 
         return () => clearInterval(intervalId);
-    }, [time, isTimeInFuture]);
+    }, [time]);
 
     return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -118,7 +104,7 @@ export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: Fe
         </div>
         <div className="space-y-2">
             <TimeDisplay time={lastFeedingTime} prefix="Last fed" />
-            <TimeDisplay time={nextFeedingTime} prefix="Next feeding" isTimeInFuture={true} />
+            <TimeDisplay time={nextFeedingTime} prefix="Next feeding" />
         </div>
       </CardContent>
       <CardFooter className="gap-2">

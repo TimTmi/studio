@@ -30,8 +30,8 @@ import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 
 const scheduleFormSchema = z.object({
-  scheduledTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'Time must be in HH:MM format (e.g., 08:30)',
+  scheduledTime: z.date({
+    required_error: "A date and time is required.",
   }),
   portionSize: z.coerce.number().min(1, {
     message: 'Portion must be at least 1 gram.',
@@ -51,7 +51,7 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
-      scheduledTime: '',
+      scheduledTime: new Date(),
       portionSize: 50,
     },
   });
@@ -84,7 +84,7 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
         <DialogHeader>
           <DialogTitle>Add New Schedule</DialogTitle>
           <DialogDescription>
-            Enter the time and portion size for the new feeding schedule.
+            Enter the date, time, and portion size for the new feeding schedule.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -94,9 +94,13 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
               name="scheduledTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Scheduled Time (HH:MM)</FormLabel>
+                  <FormLabel>Scheduled Date & Time</FormLabel>
                   <FormControl>
-                    <Input type="time" {...field} />
+                     <Input 
+                      type="datetime-local"
+                      value={field.value ? new Date(field.value.getTime() - field.value.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

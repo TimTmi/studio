@@ -75,8 +75,8 @@
         },
         "scheduledTime": {
           "type": "string",
-          "description": "The time the feeder is scheduled to dispense food.",
-          "format": "time"
+          "format": "date-time",
+          "description": "The date and time the feeder is scheduled to dispense food."
         },
         "portionSize": {
           "type": "number",

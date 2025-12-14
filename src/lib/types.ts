@@ -18,7 +18,7 @@ export type UserProfile = {
 export type FeedingSchedule = {
   id: string;
   feederId: string;
-  scheduledTime: string;
+  scheduledTime: Timestamp;
   portionSize: number;
 };
 

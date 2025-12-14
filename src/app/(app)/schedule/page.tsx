@@ -17,10 +17,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, Timestamp, where } from 'firebase/firestore';
 import { PlusCircle, Bone, Loader2 } from 'lucide-react';
 import { AddScheduleDialog } from '@/components/add-schedule-dialog';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -37,6 +38,7 @@ export default function SchedulePage() {
     if (!userProfile?.feederId) return null;
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
+      where('scheduledTime', '>=', Timestamp.now()),
       orderBy('scheduledTime', 'asc')
     );
   }, [firestore, userProfile?.feederId]);
@@ -86,7 +88,7 @@ export default function SchedulePage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>All Schedules</CardTitle>
+              <CardTitle>Upcoming Schedules</CardTitle>
               <CardDescription>
                 A list of all currently active feeding schedules.
               </CardDescription>
@@ -99,9 +101,8 @@ export default function SchedulePage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Feeder</TableHead>
-                <TableHead>Time</TableHead>
+                <TableHead>Date & Time</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Days</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -110,7 +111,6 @@ export default function SchedulePage() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>Loading...</TableCell>
-                    <TableCell>...</TableCell>
                     <TableCell>...</TableCell>
                     <TableCell>...</TableCell>
                     <TableCell className="text-right">...</TableCell>
@@ -122,15 +122,8 @@ export default function SchedulePage() {
                     <TableCell className="font-medium">
                       {userProfile?.name || 'My Feeder'}
                     </TableCell>
-                    <TableCell>{schedule.scheduledTime}</TableCell>
+                    <TableCell>{schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'PPP p')}</TableCell>
                     <TableCell>{schedule.portionSize} grams</TableCell>
-                    <TableCell className="flex gap-1">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                        <Badge key={day} variant="secondary">
-                          {day}
-                        </Badge>
-                      ))}
-                    </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm">
                         Edit
@@ -140,8 +133,8 @@ export default function SchedulePage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No schedules found.
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    No upcoming schedules found.
                   </TableCell>
                 </TableRow>
               )}

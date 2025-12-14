@@ -109,17 +109,16 @@ exports.mqttListener = functions.https.onRequest((request, response) => {
 exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
   functions.logger.info("Running scheduled feeding check...");
 
-  const now = new Date();
-  // Format current time to HH:MM to match Firestore data
-  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  const now = admin.firestore.Timestamp.now();
+  const oneMinuteFromNow = admin.firestore.Timestamp.fromMillis(now.toMillis() + 60000);
 
   try {
     const schedulesRef = db.collectionGroup('feedingSchedules');
-    const query = schedulesRef.where('scheduledTime', '==', currentTime);
+    const query = schedulesRef.where('scheduledTime', '>=', now).where('scheduledTime', '<', oneMinuteFromNow);
     const snapshot = await query.get();
 
     if (snapshot.empty) {
-      functions.logger.info(`No feedings scheduled for ${currentTime}.`);
+      functions.logger.info(`No feedings scheduled for the next minute.`);
       return;
     }
     
@@ -131,13 +130,13 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
 
     publisher.on('connect', () => {
         functions.logger.info('[MQTT Publisher] Connected to HiveMQ Broker for publishing.');
-        snapshot.forEach(doc => {
+        const promises = snapshot.docs.map(doc => {
             const schedule = doc.data();
             const { feederId, portionSize } = schedule;
             
             if (!feederId || !portionSize) {
                 functions.logger.warn(`Skipping invalid schedule: ${doc.id}`);
-                return;
+                return Promise.resolve();
             }
 
             const commandTopic = `feeders/${feederId}/commands`;
@@ -146,25 +145,37 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
                 portionSize: portionSize
             });
 
-            publisher.publish(commandTopic, commandPayload, (err) => {
-                if (err) {
-                    functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
-                } else {
-                    functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
-                    // Log the feeding event to Firestore
-                    const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
-                    logRef.set({
-                        feederId: feederId,
-                        portionSize: portionSize,
-                        timestamp: admin.firestore.FieldValue.serverTimestamp()
-                    }).catch(logErr => {
-                        functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
-                    });
-                }
+            const publishPromise = new Promise((resolve, reject) => {
+                 publisher.publish(commandTopic, commandPayload, (err) => {
+                    if (err) {
+                        functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
+                        reject(err);
+                    } else {
+                        functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
+                        // Log the feeding event to Firestore
+                        const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
+                        logRef.set({
+                            feederId: feederId,
+                            portionSize: portionSize,
+                            timestamp: admin.firestore.FieldValue.serverTimestamp()
+                        }).catch(logErr => {
+                            functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
+                        });
+
+                        // After dispensing, delete the one-time schedule
+                        doc.ref.delete().catch(deleteErr => {
+                            functions.logger.error(`Failed to delete schedule ${doc.id}:`, deleteErr);
+                        });
+                        resolve();
+                    }
+                });
             });
+            return publishPromise;
         });
-        // Disconnect after publishing all messages
-        setTimeout(() => publisher.end(), 2000);
+
+        Promise.all(promises).finally(() => {
+            setTimeout(() => publisher.end(), 2000);
+        });
     });
     
     publisher.on('error', (err) => {
