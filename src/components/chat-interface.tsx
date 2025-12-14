@@ -6,14 +6,22 @@ import { getAiResponse } from '@/app/(app)/chatbot/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { Separator } from './ui/separator';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
   text: string;
 };
+
+const suggestedQuestions = [
+    "How much did my pet eat today?",
+    "What was the last feeding time?",
+    "Are there any feedings scheduled for tomorrow?",
+    "Summarize last week's feeding activity.",
+];
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -37,10 +45,11 @@ export function ChatInterface() {
       text: input,
     };
     setMessages((prev) => [...prev, userMessage]);
+    const query = input;
     setInput('');
 
     startTransition(async () => {
-      const { response } = await getAiResponse(input);
+      const { response } = await getAiResponse(query);
       const assistantMessage: Message = {
         id: Date.now() + 1,
         role: 'assistant',
@@ -50,6 +59,34 @@ export function ChatInterface() {
     });
   };
 
+  const handleSuggestedQuestion = (question: string) => {
+    if (isPending) return;
+
+    // We don't add the user message to the history.
+    // We immediately show the loading state and fetch the response.
+    startTransition(async () => {
+       const thinkingMessage: Message = {
+         id: Date.now(),
+         role: 'assistant',
+         text: 'Thinking...',
+       };
+       // A bit of a trick: add a temporary "Thinking..." message
+       // We will replace it with the actual response.
+       setMessages((prev) => [...prev, thinkingMessage]);
+
+      const { response } = await getAiResponse(question);
+      const assistantMessage: Message = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        text: response,
+      };
+      
+      // Replace the "Thinking..." message with the final one
+      setMessages((prev) => [...prev.filter(m => m.id !== thinkingMessage.id), assistantMessage]);
+    });
+  };
+
+
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({
@@ -57,7 +94,7 @@ export function ChatInterface() {
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, isPending]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
@@ -86,7 +123,14 @@ export function ChatInterface() {
                     : 'bg-muted'
                 )}
               >
-                {message.text}
+                 {message.text === 'Thinking...' ? (
+                    <div className="flex items-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <span>Thinking...</span>
+                    </div>
+                ) : (
+                    message.text
+                )}
               </div>
               {message.role === 'user' && (
                 <Avatar className="h-9 w-9 border">
@@ -97,7 +141,7 @@ export function ChatInterface() {
               )}
             </div>
           ))}
-          {isPending && (
+          {isPending && messages[messages.length-1]?.text !== 'Thinking...' && (
              <div className="flex items-start gap-4">
                  <Avatar className="h-9 w-9 border">
                   <AvatarFallback>
@@ -112,7 +156,16 @@ export function ChatInterface() {
           )}
         </div>
       </ScrollArea>
+
       <div className="border-t p-4">
+        <div className="mb-2 flex flex-wrap gap-2">
+            {suggestedQuestions.map((q) => (
+                <Button key={q} variant="outline" size="sm" onClick={() => handleSuggestedQuestion(q)} disabled={isPending}>
+                    {q}
+                </Button>
+            ))}
+        </div>
+        <Separator className="my-4"/>
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <Input
             value={input}
