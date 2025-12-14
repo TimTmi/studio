@@ -28,7 +28,7 @@ export default function LogsPage() {
   const userProfileRef = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return doc(firestore, `users/${user.uid}`);
-  }, [user?.uid]);
+  }, [firestore, user?.uid]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
@@ -39,12 +39,12 @@ export default function LogsPage() {
       orderBy('timestamp', 'desc'),
       limit(20)
     );
-  }, [userProfile?.feederId]);
+  }, [firestore, userProfile?.feederId]);
   
   const feederRef = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
     return doc(firestore, `feeders/${userProfile.feederId}`);
-  }, [userProfile?.feederId]);
+  }, [firestore, userProfile?.feederId]);
 
   const { data: feedingLogs, isLoading: areLogsLoading } = useCollection(logsQuery);
   const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
