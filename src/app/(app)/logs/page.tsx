@@ -17,9 +17,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FeedingLogChart } from '@/components/feeding-log-chart';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Bone } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 
 export default function LogsPage() {
   const { user, isUserLoading } = useUser();
@@ -50,6 +50,14 @@ export default function LogsPage() {
   const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
 
   const isLoading = isUserLoading || areLogsLoading || isProfileLoading || isFeederLoading;
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
+        <Bone className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -94,16 +102,16 @@ export default function LogsPage() {
                   <TableRow key={log.id}>
                     <TableCell className="font-medium">{feeder?.name || 'Feeder'}</TableCell>
                     <TableCell>
-                      {format(new Date(log.timestamp), 'PPP p')}
+                      {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>
                     <TableCell>{log.portionSize} cups</TableCell>
                     <TableCell className="text-right">
-                      <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
-                          {log.status === 'success' ? 
+                      <Badge variant={(log as any).status === 'success' ? 'default' : 'destructive'}>
+                          {(log as any).status === 'success' ? 
                               <CheckCircle2 className="mr-1 h-3 w-3" /> :
                               <XCircle className="mr-1 h-3 w-3" />
                           }
-                        {log.status}
+                        {(log as any).status}
                       </Badge>
                     </TableCell>
                   </TableRow>

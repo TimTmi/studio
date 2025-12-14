@@ -5,6 +5,7 @@ import { useFirestore } from '@/firebase/provider';
 import { doc } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Bone } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -25,6 +26,14 @@ export default function DashboardPage() {
   const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
 
   const isLoading = isUserLoading || isProfileLoading || isFeederLoading;
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
+        <Bone className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

@@ -17,8 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, where, orderBy, doc } from 'firebase/firestore';
-import { PlusCircle } from 'lucide-react';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { PlusCircle, Bone } from 'lucide-react';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -52,6 +52,14 @@ export default function SchedulePage() {
   };
 
   const isLoading = isUserLoading || isProfileLoading || areSchedulesLoading || isFeederLoading;
+  
+  if (isUserLoading) {
+    return (
+      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
+        <Bone className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

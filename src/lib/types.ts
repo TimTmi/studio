@@ -13,10 +13,10 @@ export type Feeder = {
   id: string;
   name: string;
   location?: string;
-  petType: 'dog' | 'cat';
-  status: 'online' | 'offline';
-  bowlLevel: number;
-  nextFeeding: {
+  petType?: 'dog' | 'cat';
+  status?: 'online' | 'offline';
+  bowlLevel?: number;
+  nextFeeding?: {
     time: string;
     amount: number;
   };
@@ -33,7 +33,7 @@ export type FeedingLog = {
   id: string;
   feederId: string;
   feederName: string;
-  timestamp: string | Timestamp;
+  timestamp: Timestamp;
   portionSize: number;
   amount: number; // for chart
   status: 'success' | 'failed';
