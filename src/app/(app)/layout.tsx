@@ -37,10 +37,10 @@ export default function AppLayout({
   return (
     <div className="flex min-h-screen w-full flex-col">
        <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="flex h-16 w-full items-center justify-between px-6">
           <Link href="/dashboard" className="flex items-center gap-2">
              <Image src="/icon.png" alt="Autofeeder Logo" width={40} height={40} />
-             <span className="text-lg font-bold">Autofeeder</span>
+             <span className="text-lg font-bold">FoodFPet</span>
            </Link>
            <div className="flex flex-1 items-center justify-end space-x-4">
               <MainNav />
