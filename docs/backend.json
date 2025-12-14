@@ -49,13 +49,6 @@
         },
         "bowlLevel": {
             "type": "number"
-        },
-        "nextFeeding": {
-            "type": "object",
-            "properties": {
-                "time": {"type": "string"},
-                "amount": {"type": "number"}
-            }
         }
       },
       "required": [
@@ -82,7 +75,7 @@
         "scheduledTime": {
           "type": "string",
           "description": "The time the feeder is scheduled to dispense food.",
-          "format": "date-time"
+          "format": "time"
         },
         "portionSize": {
           "type": "number",

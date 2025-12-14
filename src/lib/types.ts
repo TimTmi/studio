@@ -13,10 +13,6 @@ export type UserProfile = {
   petType?: 'dog' | 'cat';
   status?: 'online' | 'offline';
   bowlLevel?: number;
-  nextFeeding?: {
-    time: string;
-    amount: number;
-  };
 }
 
 export type FeedingSchedule = {

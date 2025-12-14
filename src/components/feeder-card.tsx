@@ -1,5 +1,5 @@
 'use client';
-import { Bone, Cat, Dog, Power, PowerOff } from 'lucide-react';
+import { Bone, Cat, Dog, Power, PowerOff, Clock, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,13 +13,64 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
 import type { UserProfile } from '@/lib/types';
-
+import { Timestamp } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 
 type FeederCardProps = {
   userProfile: UserProfile;
+  lastFeedingTime?: Timestamp;
+  nextFeedingTime?: string;
 };
 
-export function FeederCard({ userProfile }: FeederCardProps) {
+const TimeDisplay = ({ time, prefix, isTimeInFuture = false }: { time?: Timestamp | string; prefix: string; isTimeInFuture?: boolean }) => {
+    const [relativeTime, setRelativeTime] = useState('');
+
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout;
+
+        const updateRelativeTime = () => {
+            if (!time) {
+                setRelativeTime('N/A');
+                return;
+            }
+
+            let dateToCompare: Date;
+
+            if (typeof time === 'string') { // It's a "HH:mm" schedule string
+                const [hours, minutes] = time.split(':').map(Number);
+                const now = new Date();
+                dateToCompare = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+                
+                // If the time is in the past for today, it must be for tomorrow
+                if (isTimeInFuture && dateToCompare < now) {
+                    dateToCompare.setDate(dateToCompare.getDate() + 1);
+                }
+            } else { // It's a Firestore Timestamp
+                dateToCompare = time.toDate();
+            }
+            
+            setRelativeTime(formatDistanceToNow(dateToCompare, { addSuffix: !isTimeInFuture }));
+        };
+
+        updateRelativeTime();
+        // Update every minute to keep the time fresh
+        intervalId = setInterval(updateRelativeTime, 60000); 
+
+        return () => clearInterval(intervalId);
+    }, [time, isTimeInFuture]);
+
+    return (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {prefix === "Last fed" ? <History className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+            <span>{prefix}:</span>
+            <span className="font-medium text-foreground">{relativeTime}</span>
+        </div>
+    );
+};
+
+
+export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
   const isOnline = userProfile.status === 'online';
   const bowlLevel = userProfile.bowlLevel ?? 0;
   const isLowFood = bowlLevel < 25;
@@ -50,13 +101,10 @@ export function FeederCard({ userProfile }: FeederCardProps) {
           <Progress value={bowlLevel} aria-label={`${bowlLevel}% food remaining`} />
           {isLowFood && isOnline && <p className="mt-2 text-xs text-destructive">Food level is low. Please refill soon.</p>}
         </div>
-        {userProfile.nextFeeding && (
-             <div>
-                <div className="text-sm text-muted-foreground">Next Feeding</div>
-                <div className="text-lg font-semibold">{userProfile.nextFeeding.time}</div>
-                <div className="text-sm text-muted-foreground">{userProfile.nextFeeding.amount} cups</div>
-            </div>
-        )}
+        <div className="space-y-2">
+            <TimeDisplay time={lastFeedingTime} prefix="Last fed" />
+            <TimeDisplay time={nextFeedingTime} prefix="Next feeding" isTimeInFuture={true} />
+        </div>
       </CardContent>
       <CardFooter className="gap-2">
         <Button className="w-full" disabled={!isOnline}>
