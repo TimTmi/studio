@@ -9,6 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
+import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 type Message = {
   id: number;
@@ -24,6 +26,15 @@ const suggestedQuestions = [
 ];
 
 export function ChatInterface() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user?.uid) return null;
+    return doc(firestore, `users/${user.uid}`);
+  }, [firestore, user?.uid]);
+  const { data: userProfile } = useDoc(userProfileRef);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -35,9 +46,31 @@ export function ChatInterface() {
   const [isPending, startTransition] = useTransition();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  const processQuery = (query: string) => {
+     startTransition(async () => {
+       const feederId = userProfile?.feederId || null;
+       const thinkingMessage: Message = {
+         id: Date.now(),
+         role: 'assistant',
+         text: 'Thinking...',
+       };
+       setMessages((prev) => [...prev, thinkingMessage]);
+
+       const { response } = await getAiResponse(query, feederId);
+       
+       const assistantMessage: Message = {
+         id: Date.now() + 1,
+         role: 'assistant',
+         text: response,
+       };
+       
+       setMessages((prev) => [...prev.filter(m => m.id !== thinkingMessage.id), assistantMessage]);
+    });
+  }
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isPending) return;
 
     const userMessage: Message = {
       id: Date.now(),
@@ -48,42 +81,20 @@ export function ChatInterface() {
     const query = input;
     setInput('');
 
-    startTransition(async () => {
-      const { response } = await getAiResponse(query);
-      const assistantMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        text: response,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    });
+    processQuery(query);
   };
 
   const handleSuggestedQuestion = (question: string) => {
     if (isPending) return;
 
-    // We don't add the user message to the history.
-    // We immediately show the loading state and fetch the response.
-    startTransition(async () => {
-       const thinkingMessage: Message = {
-         id: Date.now(),
-         role: 'assistant',
-         text: 'Thinking...',
-       };
-       // A bit of a trick: add a temporary "Thinking..." message
-       // We will replace it with the actual response.
-       setMessages((prev) => [...prev, thinkingMessage]);
-
-      const { response } = await getAiResponse(question);
-      const assistantMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        text: response,
-      };
-      
-      // Replace the "Thinking..." message with the final one
-      setMessages((prev) => [...prev.filter(m => m.id !== thinkingMessage.id), assistantMessage]);
-    });
+    const userMessage: Message = {
+      id: Date.now(),
+      role: 'user',
+      text: question,
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    
+    processQuery(question);
   };
 
 

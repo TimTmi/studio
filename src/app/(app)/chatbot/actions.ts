@@ -1,83 +1,48 @@
-
 'use server';
 
-// NOTE: The user has requested to bypass Genkit and call Hugging Face directly.
-// The original Genkit flows are preserved in the file system but are no longer used by the chatbot.
+import { aiChatbotFeedingQuery } from "@/ai/flows/ai-chatbot-feeding-query";
+import { getPetFeedingAdvice } from "@/ai/flows/ai-chatbot-general-pet-advice";
+import { getAuth } from "firebase-admin/auth";
+import { cookies } from "next/headers";
+import * as admin from 'firebase-admin';
 
-type HuggingFacePayload = {
-  model: string;
-  messages: { role: 'user' | 'assistant'; content: string }[];
-  stream?: boolean;
-};
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
-type HuggingFaceResponse = {
-  choices: {
-    index: number;
-    message: {
-      role: 'assistant';
-      content: string;
-    };
-    finish_reason: string | null;
-  }[];
-};
-
-export async function getAiResponse(query: string) {
-  const HOST = 'https://router.huggingface.co';
-  const ENDPOINT = '/novita/v3/openai/chat/completions';
-  const URL = HOST + ENDPOINT;
-  const TOKEN = process.env.HUGGING_FACE_TOKEN;
-
-  if (!TOKEN) {
-    console.error('Hugging Face token is not configured in .env file.');
-    return {
-      response: 'Sorry, the AI service is not configured correctly. The API token is missing.',
-      error: 'Hugging Face token not found.',
-    };
-  }
-
-  const payload: HuggingFacePayload = {
-    model: 'deepseek/deepseek-v3-0324',
-    messages: [{ role: 'user', content: query }],
-  };
+// This function will decide which AI flow to call based on the query.
+export async function getAiResponse(query: string, feederId: string | null) {
+  
+  // Simple keyword-based routing.
+  const isFeedingHistoryQuery = 
+    query.toLowerCase().includes('eat') || 
+    query.toLowerCase().includes('much') || 
+    query.toLowerCase().includes('last') || 
+    query.toLowerCase().includes('when') ||
+    query.toLowerCase().includes('week') ||
+    query.toLowerCase().includes('log') ||
+    query.toLowerCase().includes('history');
 
   try {
-    const response = await fetch(URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${TOKEN}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Hugging Face API error:', response.status, errorBody);
-      return {
-        response: `Sorry, I encountered an API error: ${response.statusText}`,
-        error: `API Error: ${response.status} ${errorBody}`,
-      };
-    }
-
-    const result: HuggingFaceResponse = await response.json();
-
-    if (result.choices && result.choices.length > 0) {
-      return {
-        response: result.choices[0].message.content,
-        error: null,
-      };
+    let result;
+    if (isFeedingHistoryQuery) {
+        if (!feederId) {
+            return {
+                response: "I need to know which feeder you're asking about. Please link your feeder in the settings page.",
+                error: null,
+            };
+        }
+      result = await aiChatbotFeedingQuery({ query, feederId });
+      return { response: result.response, error: null };
     } else {
-      return {
-        response: "Sorry, I received an unexpected response from the AI.",
-        error: 'Invalid response structure from API.',
-      };
+      result = await getPetFeedingAdvice({ query });
+      return { response: result.advice, error: null };
     }
-
   } catch (error) {
-    console.error('Error calling Hugging Face API:', error);
+    console.error('Error calling Genkit AI flow:', error);
     return {
       response: 'Sorry, I encountered an error while trying to reach the AI service. Please try again.',
-      error: 'An unexpected network error occurred.',
+      error: 'An unexpected error occurred.',
     };
   }
 }
