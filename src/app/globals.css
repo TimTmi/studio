@@ -37,6 +37,7 @@
     --sidebar-border: 0 0% 89.8%;
     --sidebar-ring: 145 25% 45%;
     --radius: 0.5rem;
+    --header-background: 145 20% 90%;
   }
 
   .dark {
@@ -73,6 +74,7 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 145 25% 55%;
     --radius: 0.5rem;
+    --header-background: 145 15% 20%;
   }
 }
 

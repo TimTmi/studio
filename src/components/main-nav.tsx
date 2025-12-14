@@ -36,10 +36,10 @@ export function MainNav() {
             'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
             pathname === item.href
               ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground hover:bg-accent/80 hover:text-accent-foreground'
+              : 'text-foreground/70 hover:bg-black/5 hover:text-foreground'
           )}
         >
-          {item.icon && <item.icon className="text-primary" />}
+          
           {item.label}
         </Link>
       ))}
