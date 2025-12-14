@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import Image from 'next/image';
 
 type Message = {
   id: number;
@@ -127,7 +128,7 @@ export function ChatInterface() {
               {message.role === 'assistant' && (
                 <Avatar className="h-9 w-9 border">
                   <AvatarFallback>
-                    <Bot />
+                    <Image src="/FoodCatCatFood.png" alt="AI avt" />
                   </AvatarFallback>
                 </Avatar>
               )}
