@@ -1,6 +1,6 @@
 'use client';
 import { useUser } from '@/firebase';
-import { Bone } from 'lucide-react';
+import Image from 'next/image';
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Bone } from 'lucide-react';
 
 export default function AppLayout({
   children,
@@ -45,10 +46,10 @@ export default function AppLayout({
       <Sidebar>
         <SidebarHeader>
           <div className="flex h-10 items-center gap-2 px-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Bone className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+              <Image src="/icon.png" alt="FoodFPet Logo" width={20} height={20} />
             </div>
-            <span className="text-lg font-semibold text-primary">PetPal Hub</span>
+            <span className="text-lg font-semibold text-[#b89f84] text-primary">FoodFPet</span>
           </div>
         </SidebarHeader>
         <SidebarContent>
