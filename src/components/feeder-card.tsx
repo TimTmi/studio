@@ -86,13 +86,13 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
 
   const handleFeedNow = () => {
     if (!feeder.id) return;
-    const logsCollectionRef = collection(firestore, `feeders/${feeder.id}/feedingLogs`);
-    const newLog = {
-      feederId: feeder.id,
+    const commandsCollectionRef = collection(firestore, `feeders/${feeder.id}/commands`);
+    const newCommand = {
+      command: 'dispense',
       portionSize: 50, // Default for manual feed in grams
-      timestamp: serverTimestamp(),
+      createdAt: serverTimestamp(),
     };
-    addDocumentNonBlocking(logsCollectionRef, newLog);
+    addDocumentNonBlocking(commandsCollectionRef, newCommand);
   };
 
   return (

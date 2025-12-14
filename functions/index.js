@@ -187,3 +187,74 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
 
   return null;
 });
+
+/**
+ * Triggers when a new command is added to a feeder's 'commands' subcollection.
+ * This function sends a command to the physical feeder via MQTT.
+ */
+exports.onCommandCreated = functions.firestore
+  .document('feeders/{feederId}/commands/{commandId}')
+  .onCreate(async (snap, context) => {
+    const commandData = snap.data();
+    const { feederId, commandId } = context.params;
+
+    functions.logger.info(`New command [${commandId}] for feeder [${feederId}]:`, commandData);
+
+    if (commandData.command !== 'dispense' || !commandData.portionSize) {
+      functions.logger.warn("Invalid command received. Deleting from queue.", commandData);
+      return snap.ref.delete(); // Clean up invalid command
+    }
+    
+    const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
+    const commandPayload = JSON.stringify({
+      command: commandData.command,
+      portionSize: commandData.portionSize
+    });
+
+    const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
+      username: mqttConfig.username,
+      password: mqttConfig.password,
+    });
+
+    const publishPromise = new Promise((resolve, reject) => {
+        publisher.on('connect', () => {
+            functions.logger.info(`[MQTT Publisher] Connected to send command for feeder: ${feederId}`);
+            publisher.publish(commandTopic, commandPayload, (err) => {
+                if (err) {
+                    functions.logger.error(`Failed to publish command to ${commandTopic}:`, err);
+                    publisher.end();
+                    reject(err);
+                } else {
+                    functions.logger.info(`Successfully published command to ${commandTopic}: ${commandPayload}`);
+                    publisher.end();
+                    resolve();
+                }
+            });
+        });
+        publisher.on('error', (err) => {
+            functions.logger.error(`[MQTT Publisher] Connection error for ${feederId}:`, err);
+            publisher.end();
+            reject(err);
+        });
+    });
+
+    try {
+        await publishPromise;
+        
+        // Log the successful feeding event
+        const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
+        await logRef.set({
+            feederId: feederId,
+            portionSize: commandData.portionSize,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            source: 'manual' // Indicates it came from "Feed Now"
+        });
+
+        // Clean up the command document after processing
+        return snap.ref.delete();
+    } catch (error) {
+        functions.logger.error(`Error processing command ${commandId} for feeder ${feederId}:`, error);
+        // Optionally, you could add retry logic or move to a "failed_commands" collection
+        return null;
+    }
+});
