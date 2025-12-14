@@ -13,14 +13,14 @@ export default function DashboardPage() {
   const userProfileRef = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return doc(firestore, `users/${user.uid}`);
-  }, [user?.uid]);
+  }, [firestore, user?.uid]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   const feederRef = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
     return doc(firestore, `feeders/${userProfile.feederId}`);
-  }, [userProfile?.feederId]);
+  }, [firestore, userProfile?.feederId]);
 
   const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
 
