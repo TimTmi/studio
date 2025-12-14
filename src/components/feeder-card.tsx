@@ -64,7 +64,7 @@ const LevelBar = ({ label, value, icon, isLow }: { label: string; value: number;
                 {icon}
                 {label}
             </span>
-            <span className={`font-medium ${isLow ? 'text-destructive' : 'text-foreground'}`}>
+            <span className={`font-medium ${isLow ? 'text-destructive' : 'text-primary'}`}>
                 {value}%
             </span>
         </div>
@@ -131,7 +131,7 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
         </div>
       </CardContent>
       <CardFooter className="gap-2">
-        <Button className="w-full" disabled={!isOnline} onClick={handleFeedNow}>
+        <Button className="w-full" disabled={!isOnline} onClick={handleFeedNow} variant="sage">
           <Bone className="mr-2" />
           Feed Now
         </Button>
