@@ -15,6 +15,7 @@ export type Feeder = {
   petType?: 'dog' | 'cat';
   status?: 'online' | 'offline';
   bowlLevel?: number;
+  storageLevel?: number;
 }
 
 export type FeedingSchedule = {

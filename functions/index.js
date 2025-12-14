@@ -69,15 +69,15 @@ client.on("message", async (topic, message) => {
 
     // Map MQTT metrics to Firestore fields
     switch (metric) {
-      case "storage/percent":
+      case "bowl/percent":
         updateData = { bowlLevel: parseFloat(payload) };
         break;
-      case "storage/state":
-        // Assuming payload from device can be something that indicates online/offline state
-        const status = (payload === "EMPTY" || payload === "LOW" || payload === "OK") ? "online" : "offline";
-        updateData = { status: status };
+      case "storage/percent":
+        updateData = { storageLevel: parseFloat(payload) };
         break;
-      // Add other metric mappings here
+      case "status":
+        updateData = { status: payload }; // e.g. "online" or "offline"
+        break;
     }
 
     if (Object.keys(updateData).length > 0) {

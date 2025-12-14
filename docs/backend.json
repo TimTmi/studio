@@ -72,6 +72,10 @@
         "bowlLevel": {
             "type": "number",
             "description": "Percentage of food remaining in the bowl."
+        },
+        "storageLevel": {
+            "type": "number",
+            "description": "Percentage of food remaining in the main storage container."
         }
       },
       "required": ["id", "ownerId", "name"]

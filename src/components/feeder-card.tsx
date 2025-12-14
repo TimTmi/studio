@@ -1,5 +1,5 @@
 'use client';
-import { Bone, Cat, Dog, Power, PowerOff, Clock, History } from 'lucide-react';
+import { Bone, Cat, Dog, Power, PowerOff, Clock, History, Archive, Drumstick } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -58,12 +58,31 @@ const TimeDisplay = ({ time, prefix }: { time?: Timestamp; prefix: string;}) => 
     );
 };
 
+const LevelBar = ({ label, value, icon, isLow }: { label: string; value: number; icon: React.ReactNode; isLow: boolean; }) => (
+    <div>
+        <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground">
+                {icon}
+                {label}
+            </span>
+            <span className={`font-medium ${isLow ? 'text-destructive' : 'text-foreground'}`}>
+                {value}%
+            </span>
+        </div>
+        <Progress value={value} aria-label={`${value}% ${label} remaining`} />
+        {isLow && <p className="mt-2 text-xs text-destructive">{label} is low. Please refill soon.</p>}
+    </div>
+);
+
 
 export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
   const firestore = useFirestore();
   const isOnline = feeder.status === 'online';
   const bowlLevel = feeder.bowlLevel ?? 0;
-  const isLowFood = bowlLevel < 25;
+  const storageLevel = feeder.storageLevel ?? 0;
+  
+  const isLowBowl = bowlLevel < 25;
+  const isLowStorage = storageLevel < 25;
 
   const handleFeedNow = () => {
     if (!feeder.id) return;
@@ -92,15 +111,19 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
         <CardDescription>Manage your pet's feeding schedule and monitor their food supply.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
-        <div>
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Bowl Level</span>
-            <span className={`font-medium ${isLowFood ? 'text-destructive' : 'text-foreground'}`}>
-              {bowlLevel}%
-            </span>
-          </div>
-          <Progress value={bowlLevel} aria-label={`${bowlLevel}% food remaining`} />
-          {isLowFood && isOnline && <p className="mt-2 text-xs text-destructive">Food level is low. Please refill soon.</p>}
+        <div className="space-y-4">
+            <LevelBar 
+                label="Storage Level" 
+                value={storageLevel} 
+                icon={<Archive />}
+                isLow={isLowStorage && isOnline} 
+            />
+            <LevelBar 
+                label="Bowl Level" 
+                value={bowlLevel} 
+                icon={<Drumstick />}
+                isLow={isLowBowl && isOnline} 
+            />
         </div>
         <div className="space-y-2">
             <TimeDisplay time={lastFeedingTime} prefix="Last fed" />
@@ -133,17 +156,25 @@ FeederCard.Skeleton = function FeederCardSkeleton() {
            <Skeleton className="h-4 w-48 mt-1" />
         </CardHeader>
         <CardContent className="flex-grow space-y-4">
-          <div className='space-y-2'>
-            <div className="flex justify-between">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-8" />
+          <div className='space-y-4'>
+            <div className="space-y-2">
+                <div className="flex justify-between">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-8" />
+                </div>
+                <Skeleton className="h-4 w-full" />
             </div>
-            <Skeleton className="h-4 w-full" />
+             <div className="space-y-2">
+                <div className="flex justify-between">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-8" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+            </div>
           </div>
-          <div className="space-y-1">
-             <Skeleton className="h-4 w-24" />
-             <Skeleton className="h-6 w-16" />
-             <Skeleton className="h-4 w-20" />
+          <div className="space-y-2">
+             <Skeleton className="h-5 w-40" />
+             <Skeleton className="h-5 w-36" />
           </div>
         </CardContent>
         <CardFooter className="gap-2">
