@@ -18,6 +18,8 @@ import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useFirebaseApp } from '@/firebase';
 
 type FeederCardProps = {
   feeder: Feeder;
@@ -77,6 +79,7 @@ const LevelBar = ({ label, value, icon, isLow }: { label: string; value: number;
 export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
   const { toast } = useToast();
   const [isFeeding, setIsFeeding] = useState(false);
+  const app = useFirebaseApp();
   const isOnline = feeder.status === 'online';
   const bowlLevel = feeder.bowlLevel ?? 0;
   const storageLevelPercent = feeder.currentWeight ?? 0;
@@ -87,34 +90,22 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
   const handleFeedNow = async () => {
     if (!feeder.id) return;
     setIsFeeding(true);
+    
+    const functions = getFunctions(app);
+    const manualFeed = httpsCallable(functions, 'manualFeed');
 
     try {
-      // Replace with your actual Cloud Function region and project ID
-      const res = await fetch('https://us-central1-studio-1400358527-eb8e5.cloudfunctions.net/manualFeed', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          feederId: feeder.id,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Function returned error: ${res.status}`);
-      }
-      
+      await manualFeed({ feederId: feeder.id });
       toast({
         title: "Dispensing food!",
         description: "Your pet will be fed shortly.",
       });
-
     } catch (error) {
       console.error("Error calling manualFeed function:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not trigger manual feeding.",
+        description: "Could not trigger manual feeding. Check function logs for details.",
       });
     } finally {
         setIsFeeding(false);

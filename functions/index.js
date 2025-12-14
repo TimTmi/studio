@@ -7,10 +7,6 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // --- Configuration ---
-// It's highly recommended to store these in environment variables
-// Use the Firebase CLI to set them before deploying:
-// firebase functions:config:set mqtt.username="YOUR_USERNAME"
-// firebase functions:config:set mqtt.password="YOUR_PASSWORD"
 const mqttConfig = functions.config().mqtt;
 
 if (!mqttConfig || !mqttConfig.username || !mqttConfig.password) {
@@ -22,8 +18,7 @@ const MQTT_PORT = "8883"; // Secure TLS port
 const MQTT_TOPIC_PREFIX = "feeders";
 const MQTT_WILDCARD_TOPIC = `${MQTT_TOPIC_PREFIX}/+/+`; // Subscribes to all feeders and all their sub-topics
 
-// --- MQTT Client Setup ---
-// This client is for listening to messages FROM the device
+// --- MQTT Client Setup (for listening) ---
 const client = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
   username: mqttConfig.username,
   password: mqttConfig.password,
@@ -48,8 +43,6 @@ client.on("message", async (topic, message) => {
   const payload = message.toString();
   functions.logger.info(`[MQTT Listener] Message from topic "${topic}": ${payload}`);
 
-  // Topic structure is expected to be "feeders/{feederId}/{metric}"
-  // e.g., "feeders/my-esp32-123/storage/percent"
   const topicParts = topic.split("/");
   if (topicParts.length < 3 || topicParts[0] !== MQTT_TOPIC_PREFIX) {
     functions.logger.warn(`Ignoring message from invalid topic: ${topic}`);
@@ -57,7 +50,7 @@ client.on("message", async (topic, message) => {
   }
 
   const feederId = topicParts[1];
-  const metric = topicParts.slice(2).join('/'); // Handles metrics like "storage/percent"
+  const metric = topicParts.slice(2).join('/'); 
 
   if (!feederId) {
       functions.logger.warn(`Could not extract feederId from topic: ${topic}`);
@@ -68,7 +61,6 @@ client.on("message", async (topic, message) => {
     const feederRef = db.collection("feeders").doc(feederId);
     let updateData = {};
 
-    // Map MQTT metrics to Firestore fields
     switch (metric) {
       case "bowl/percent":
         updateData = { bowlLevel: parseFloat(payload) };
@@ -77,7 +69,7 @@ client.on("message", async (topic, message) => {
         updateData = { storageLevel: parseFloat(payload) };
         break;
       case "status":
-        updateData = { status: payload }; // e.g. "online" or "offline"
+        updateData = { status: payload };
         break;
       case "weight":
         updateData = { currentWeight: parseFloat(payload) };
@@ -93,7 +85,6 @@ client.on("message", async (topic, message) => {
   }
 });
 
-// This HTTP-triggered function keeps the MQTT client connection alive.
 exports.mqttListener = functions.https.onRequest((request, response) => {
   functions.logger.info("HTTP trigger for mqttListener received, keeping connection alive.");
   response.send("MQTT-to-Firestore listener is active.");
@@ -102,7 +93,6 @@ exports.mqttListener = functions.https.onRequest((request, response) => {
 
 /**
  * A Pub/Sub-triggered function to check for scheduled feedings.
- * This function should be triggered by a Cloud Scheduler job running every minute.
  */
 exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
   functions.logger.info("Running scheduled feeding check...");
@@ -112,7 +102,6 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
 
   try {
     const schedulesRef = db.collectionGroup('feedingSchedules');
-    // Find schedules due in the next minute that haven't been sent
     const query = schedulesRef
       .where('scheduledTime', '>=', now)
       .where('scheduledTime', '<', oneMinuteFromNow)
@@ -124,7 +113,6 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
       return;
     }
     
-    // A separate client for publishing to avoid topic subscription conflicts
     const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
       username: mqttConfig.username,
       password: mqttConfig.password,
@@ -154,7 +142,6 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
                         reject(err);
                     } else {
                         functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
-                        // Log the feeding event to Firestore
                         const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
                         logRef.set({
                             feederId: feederId,
@@ -163,8 +150,6 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
                         }).catch(logErr => {
                             functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
                         });
-
-                        // After dispensing, update the schedule to mark it as sent
                         doc.ref.update({ sent: true }).catch(updateErr => {
                             functions.logger.error(`Failed to update schedule ${doc.id}:`, updateErr);
                         });
@@ -176,7 +161,6 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
         });
 
         Promise.all(promises).finally(() => {
-            // Give a moment for messages to publish before closing
             setTimeout(() => publisher.end(), 2000);
         });
     });
@@ -194,73 +178,81 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
 
 
 /**
- * An HTTP-callable function to trigger a manual feeding event.
+ * An callable function to trigger a manual feeding event.
  */
-exports.manualFeed = functions.https.onRequest((req, res) => {
-    // Use CORS middleware to handle preflight and regular requests.
-    cors(req, res, async () => {
-        if (req.method !== 'POST') {
-            return res.status(405).send('Method Not Allowed');
-        }
+exports.manualFeed = functions.https.onCall(async (data, context) => {
+    // Check if the user is authenticated.
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
 
-        const { feederId } = req.body;
-        const portionSize = 50; // Default portion size for manual feed
+    const { feederId } = data;
+    const portionSize = 50; // Default portion size for manual feed
 
-        if (!feederId) {
-            functions.logger.warn("Invalid manual feed request. Missing feederId.", req.body);
-            return res.status(400).send('Missing feederId.');
-        }
+    if (!feederId) {
+        throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a "feederId".');
+    }
+    
+    // Optional: Verify the user owns this feeder
+    const userId = context.auth.uid;
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists || userDoc.data().feederId !== feederId) {
+         throw new functions.https.HttpsError('permission-denied', 'You do not have permission to control this feeder.');
+    }
 
-        const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
-        const commandPayload = JSON.stringify({
-            command: 'dispense',
-            portionSize: portionSize
-        });
-
-        const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
-            username: mqttConfig.username,
-            password: mqttConfig.password,
-        });
-
-        const publishPromise = new Promise((resolve, reject) => {
-            publisher.on('connect', () => {
-                functions.logger.info(`[MQTT Publisher] Connected to send manual feed command for feeder: ${feederId}`);
-                publisher.publish(commandTopic, commandPayload, (err) => {
-                    if (err) {
-                        functions.logger.error(`Failed to publish command to ${commandTopic}:`, err);
-                        publisher.end();
-                        reject(err);
-                    } else {
-                        functions.logger.info(`Successfully published command to ${commandTopic}: ${commandPayload}`);
-                        publisher.end();
-                        resolve();
-                    }
-                });
-            });
-            publisher.on('error', (err) => {
-                functions.logger.error(`[MQTT Publisher] Connection error for ${feederId}:`, err);
-                publisher.end();
-                reject(err);
-            });
-        });
-
-        try {
-            await publishPromise;
-            
-            // Log the successful feeding event
-            const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
-            await logRef.set({
-                feederId: feederId,
-                portionSize: portionSize,
-                timestamp: admin.firestore.FieldValue.serverTimestamp(),
-                source: 'manual' // Indicates it came from "Feed Now"
-            });
-            
-            return res.status(200).send({ message: "Feed command sent successfully." });
-
-        } catch (error) {
-            functions.logger.error(`Error processing manual feed for feeder ${feederId}:`, error);
-            return res.status(500).send({ error: "Failed to send feed command." });
-        }
+    const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
+    const commandPayload = JSON.stringify({
+        command: 'dispense',
+        portionSize: portionSize
     });
+    
+    const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
+        username: mqttConfig.username,
+        password: mqttConfig.password,
+    });
+
+    const publishPromise = new Promise((resolve, reject) => {
+        publisher.on('connect', () => {
+            functions.logger.info(`[MQTT Publisher] Connected to send manual feed command for feeder: ${feederId}`);
+            publisher.publish(commandTopic, commandPayload, (err) => {
+                publisher.end(); // Close connection after publishing
+                if (err) {
+                    functions.logger.error(`Failed to publish command to ${commandTopic}:`, err);
+                    reject(new functions.https.HttpsError('internal', 'Failed to publish MQTT command.'));
+                } else {
+                    functions.logger.info(`Successfully published command to ${commandTopic}: ${commandPayload}`);
+                    resolve();
+                }
+            });
+        });
+        publisher.on('error', (err) => {
+            functions.logger.error(`[MQTT Publisher] Connection error for ${feederId}:`, err);
+            publisher.end();
+            reject(new functions.https.HttpsError('internal', 'MQTT connection failed.'));
+        });
+    });
+
+    try {
+        await publishPromise;
+        
+        // Log the successful feeding event
+        const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
+        await logRef.set({
+            feederId: feederId,
+            portionSize: portionSize,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            source: 'manual'
+        });
+        
+        return { message: "Feed command sent successfully." };
+
+    } catch (error) {
+        // Errors from publishPromise are already HttpsError, so we can re-throw them.
+        // If another error occurs (e.g., Firestore logging), wrap it.
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        functions.logger.error(`Error processing manual feed for feeder ${feederId}:`, error);
+        throw new functions.https.HttpsError('internal', 'An unexpected error occurred while processing the feed command.');
+    }
 });
