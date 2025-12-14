@@ -31,7 +31,7 @@ export default function SignupPage() {
                 email: user.email,
             }, { merge: true });
 
-            router.push('/dashboard');
+            router.push('/home');
         }
     }, [user, isUserLoading, router, firestore]);
 
