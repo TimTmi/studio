@@ -13,9 +13,12 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
 import type { UserProfile } from '@/lib/types';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, serverTimestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
+import { useFirestore } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type FeederCardProps = {
   userProfile: UserProfile;
@@ -71,9 +74,21 @@ const TimeDisplay = ({ time, prefix, isTimeInFuture = false }: { time?: Timestam
 
 
 export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: FeederCardProps) {
+  const firestore = useFirestore();
   const isOnline = userProfile.status === 'online';
   const bowlLevel = userProfile.bowlLevel ?? 0;
   const isLowFood = bowlLevel < 25;
+
+  const handleFeedNow = () => {
+    if (!userProfile.feederId) return;
+    const logsCollectionRef = collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`);
+    const newLog = {
+      feederId: userProfile.feederId,
+      portionSize: 0.5, // Default for manual feed
+      timestamp: serverTimestamp(),
+    };
+    addDocumentNonBlocking(logsCollectionRef, newLog);
+  };
 
   return (
     <Card className="flex flex-col">
@@ -107,12 +122,14 @@ export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: Fe
         </div>
       </CardContent>
       <CardFooter className="gap-2">
-        <Button className="w-full" disabled={!isOnline}>
+        <Button className="w-full" disabled={!isOnline} onClick={handleFeedNow}>
           <Bone className="mr-2" />
           Feed Now
         </Button>
-        <Button variant="outline" className="w-full" disabled={!isOnline}>
-          Schedule
+        <Button asChild variant="outline" className="w-full" disabled={!isOnline}>
+          <Link href="/schedule">
+            Schedule
+          </Link>
         </Button>
       </CardFooter>
     </Card>
