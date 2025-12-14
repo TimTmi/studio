@@ -80,31 +80,32 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="w-full max-w-sm">
-        <div className="mb-8 text-left">
-            <h1 className="text-3xl font-bold">Sign up</h1>
-            <p className="text-muted-foreground">Sign up to enjoy the feature of FoodFPet</p>
-        </div>
-        <form onSubmit={handleSignup} className="grid gap-4">
-            <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+        <div className="w-full max-w-sm">
+            <div className="mb-8 text-left">
+                <h1 className="text-3xl text-[#b89f84] font-bold">Sign up</h1>
+                <p className="text-muted-foreground">Sign up to enjoy the feature of FoodFPet</p>
             </div>
-            <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <form onSubmit={handleSignup} className="grid gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                </div>
+                {error && <p className="text-destructive text-sm">{error}</p>}
+                <Button className="p-4 rounded-lg text-center text-white font-semibold bg-[#b89f84] hover:bg-[#a68d73] active:bg-[#b89f84]" type='submit' disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin"/> : 'Sign up'}
+                </Button>
+            </form>
+            <div className="mt-6 text-center text-sm">
+              Already have an account?{' '}
+              <Link href="/login" className="underline">
+                Sign in
+              </Link>
             </div>
-            {error && <p className="text-destructive text-sm">{error}</p>}
-            <Button className="w-full" type='submit' disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin"/> : 'Sign up'}
-            </Button>
-        </form>
-        <div className="mt-6 text-center text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="underline">
-            Sign in
-          </Link>
-        </div>
-      </div>
+          </div>
+
   );
 }

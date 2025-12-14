@@ -15,6 +15,9 @@ import { Switch } from '@/components/ui/switch';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { FormEvent, useEffect, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Power, PowerOff } from 'lucide-react';
+import type { Feeder } from '@/lib/types';
 
 export default function SettingsPage() {
     const { user, isUserLoading } = useUser();
@@ -28,6 +31,13 @@ export default function SettingsPage() {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
     
     const [feederId, setFeederId] = useState('');
+
+    const feederRef = useMemoFirebase(() => {
+        if (!userProfile?.feederId) return null;
+        return doc(firestore, `feeders/${userProfile.feederId}`);
+    }, [firestore, userProfile?.feederId]);
+    
+    const { data: feeder, isLoading: isFeederLoading } = useDoc<Feeder>(feederRef);
 
     useEffect(() => {
         if (userProfile) {
@@ -44,8 +54,8 @@ export default function SettingsPage() {
             }, { merge: true });
             
             // 2. Create or update the feeder document with the ownerId
-            const feederRef = doc(firestore, `feeders/${feederId}`);
-            setDocumentNonBlocking(feederRef, {
+            const feederDocRef = doc(firestore, `feeders/${feederId}`);
+            setDocumentNonBlocking(feederDocRef, {
                 ownerId: user.uid,
                 id: feederId,
                 name: 'My Pet Feeder', // Default name
@@ -124,7 +134,15 @@ export default function SettingsPage() {
             <form onSubmit={handleFeederSave} className="space-y-4">
                  <div className="space-y-2">
                     <Label htmlFor="feederId">Feeder ID</Label>
-                    <Input id="feederId" value={feederId} onChange={e => setFeederId(e.target.value)} placeholder="Enter your feeder ID" />
+                    <div className="flex items-center gap-2">
+                        <Input id="feederId" value={feederId} onChange={e => setFeederId(e.target.value)} placeholder="Enter your feeder ID" />
+                        {feeder && (
+                            <Badge variant={feeder.status === 'online' ? 'default' : 'destructive'}>
+                                {feeder.status === 'online' ? <Power className="mr-1 h-3 w-3" /> : <PowerOff className="mr-1 h-3 w-3" />}
+                                {feeder.status}
+                            </Badge>
+                        )}
+                    </div>
                 </div>
                 <Button type="submit">Save Feeder ID</Button>
             </form>

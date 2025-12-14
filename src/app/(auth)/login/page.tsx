@@ -67,7 +67,7 @@ export default function LoginPage() {
   return (
     <div className="w-full max-w-sm">
         <div className="mb-8 text-left">
-            <h1 className="text-3xl font-bold">Sign in</h1>
+            <h1 className="text-3xl text-[#b89f84] font-bold">Sign in</h1>
             <p className="text-muted-foreground">Please login to feed your pet with FoodFPet.</p>
         </div>
         <form onSubmit={handleLogin} className="grid gap-4">
@@ -84,7 +84,7 @@ export default function LoginPage() {
               <Label htmlFor="keep-logged-in" className="font-normal">Keep me logged in</Label>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button className="w-full" type="submit" disabled={isLoading}>
+            <Button className="p-4 rounded-lg text-center text-white font-semibold bg-[#b89f84] hover:bg-[#a68d73] active:bg-[#b89f84]" type="submit" disabled={isLoading}>
                  {isLoading ? <Loader2 className="animate-spin"/> : 'Sign in'}
             </Button>
         </form>
