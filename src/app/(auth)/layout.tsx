@@ -1,4 +1,4 @@
-import { Bone } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function AuthLayout({
@@ -7,14 +7,23 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="mb-8 flex items-center gap-3 text-2xl font-bold text-primary">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Bone className="h-6 w-6 text-primary-foreground" />
+    <div className="flex min-h-screen w-full items-center justify-center bg-muted/30 p-4">
+      <div className="grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-lg bg-card shadow-lg md:grid-cols-2">
+        <div className="relative hidden h-full min-h-[480px] md:block">
+          <Image
+            src="https://picsum.photos/seed/cat-eating/800/1000"
+            alt="A cat eating from a bowl"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+            priority
+            data-ai-hint="cat eating"
+          />
         </div>
-        <Link href="/">PetPal Hub</Link>
+        <div className="flex flex-col items-center justify-center p-6 sm:p-10">
+            {children}
+        </div>
       </div>
-      <div className="w-full max-w-sm">{children}</div>
     </div>
   );
 }
