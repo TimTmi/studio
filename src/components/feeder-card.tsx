@@ -13,12 +13,11 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
 import type { Feeder } from '@/lib/types';
-import { Timestamp, collection, serverTimestamp } from 'firebase/firestore';
+import { Timestamp, collection, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useFirestore } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type FeederCardProps = {
   feeder: Feeder;
@@ -92,7 +91,8 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
       portionSize: 50, // Default for manual feed in grams
       createdAt: serverTimestamp(),
     };
-    addDocumentNonBlocking(commandsCollectionRef, newCommand);
+    // No need to await, the Cloud Function will handle it
+    addDoc(commandsCollectionRef, newCommand);
   };
 
   return (
