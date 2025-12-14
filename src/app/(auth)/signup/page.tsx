@@ -6,17 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth, useUser } from '@/firebase';
-import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { Loader2 } from 'lucide-react';
-import { updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const auth = useAuth();
     const firestore = useFirestore();
@@ -33,21 +33,42 @@ export default function SignupPage() {
 
             router.push('/dashboard');
         }
-    }, [user, isUserLoading, router, firestore, auth]);
+    }, [user, isUserLoading, router, firestore]);
 
 
     const handleSignup = (e: FormEvent) => {
         e.preventDefault();
         setError(null);
+        setIsLoading(true);
+
         if (!email || !password ) {
             setError('Please fill out all fields.');
+            setIsLoading(false);
             return;
         }
         if (password.length < 6) {
             setError('Password must be at least 6 characters long.');
+            setIsLoading(false);
             return;
         }
-        initiateEmailSignUp(auth, email, password);
+
+        createUserWithEmailAndPassword(auth, email, password)
+            .catch((error) => {
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        setError('This email address is already in use.');
+                        break;
+                    case 'auth/invalid-email':
+                        setError('Please enter a valid email address.');
+                        break;
+                    default:
+                        setError('An error occurred during sign-up. Please try again.');
+                        break;
+                }
+                console.error("Signup Error:", error);
+            }).finally(() => {
+                setIsLoading(false);
+            });
     }
     
   if(isUserLoading || user) {
@@ -74,10 +95,12 @@ export default function SignupPage() {
                 <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
             {error && <p className="text-destructive text-sm">{error}</p>}
-            <Button className="w-full" type='submit'>Sign up</Button>
+            <Button className="w-full" type='submit' disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin"/> : 'Sign up'}
+            </Button>
         </form>
         <div className="mt-6 text-center text-sm">
-          Already have an account??{' '}
+          Already have an account?{' '}
           <Link href="/login" className="underline">
             Sign in
           </Link>

@@ -2,10 +2,10 @@
 import {
   Auth, // Import Auth type for type hinting
   signInAnonymously,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   // Assume getAuth and app are initialized elsewhere
 } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+
 
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
