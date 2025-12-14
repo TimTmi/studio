@@ -15,14 +15,6 @@
           "description": "User's email address.",
           "format": "email"
         },
-        "firstName": {
-          "type": "string",
-          "description": "User's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "User's last name."
-        },
         "settings": {
           "type": "string",
           "description": "User settings (can be stored as a JSON string)."
@@ -54,9 +46,7 @@
       },
       "required": [
         "id",
-        "email",
-        "firstName",
-        "lastName"
+        "email"
       ]
     },
     "FeedingSchedule": {

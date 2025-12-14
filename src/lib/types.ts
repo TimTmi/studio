@@ -3,8 +3,6 @@ import { Timestamp } from "firebase/firestore";
 export type UserProfile = {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
   settings?: string;
   feederId?: string;
 }

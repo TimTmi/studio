@@ -26,28 +26,14 @@ export default function SettingsPage() {
     }, [user, firestore]);
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
-
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    
     const [feederId, setFeederId] = useState('');
 
     useEffect(() => {
         if (userProfile) {
-            setFirstName(userProfile.firstName || '');
-            setLastName(userProfile.lastName || '');
             setFeederId(userProfile.feederId || '');
         }
     }, [userProfile]);
-
-    const handleProfileSave = (e: FormEvent) => {
-        e.preventDefault();
-        if (userProfileRef) {
-            setDocumentNonBlocking(userProfileRef, {
-                firstName,
-                lastName,
-            }, { merge: true });
-        }
-    }
     
     const handleFeederSave = (e: FormEvent) => {
         e.preventDefault();
@@ -120,27 +106,14 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle>Profile</CardTitle>
             <CardDescription>
-              This is how others will see you on the site.
+              Manage your account settings.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <form onSubmit={handleProfileSave} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={user?.email || ''} disabled />
-                </div>
-                <Button type="submit">Save Changes</Button>
-            </form>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" defaultValue={user?.email || ''} disabled />
+            </div>
             <Separator />
             <div>
                 <h3 className="text-lg font-medium">Feeder Settings</h3>

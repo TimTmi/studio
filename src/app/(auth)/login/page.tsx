@@ -68,7 +68,7 @@ export default function LoginPage() {
     <div className="w-full max-w-sm">
         <div className="mb-8 text-left">
             <h1 className="text-3xl font-bold">Sign in</h1>
-            <p className="text-muted-foreground">Please login to continue to your account.</p>
+            <p className="text-muted-foreground">Please login to feed your pet with FoodFPet.</p>
         </div>
         <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">

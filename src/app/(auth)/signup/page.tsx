@@ -83,7 +83,7 @@ export default function SignupPage() {
     <div className="w-full max-w-sm">
         <div className="mb-8 text-left">
             <h1 className="text-3xl font-bold">Sign up</h1>
-            <p className="text-muted-foreground">Sign up to enjoy the feature of AutoFeeder</p>
+            <p className="text-muted-foreground">Sign up to enjoy the feature of FoodFPet</p>
         </div>
         <form onSubmit={handleSignup} className="grid gap-4">
             <div className="grid gap-2">
