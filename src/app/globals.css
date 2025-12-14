@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 30 33% 98%; /* #FAF8F5 */
+    --background: transparent; /* Changed from solid color */
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -82,5 +82,9 @@
   body {
     @apply text-foreground;
     background: linear-gradient(135deg, #FAF8F5 0%, #EEF3EF 100%);
+    background-attachment: fixed;
+  }
+  main {
+    background-color: transparent;
   }
 }
