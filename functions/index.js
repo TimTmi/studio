@@ -78,6 +78,9 @@ client.on("message", async (topic, message) => {
       case "status":
         updateData = { status: payload }; // e.g. "online" or "offline"
         break;
+      case "weight":
+        updateData = { currentWeight: parseFloat(payload) };
+        break;
     }
 
     if (Object.keys(updateData).length > 0) {

@@ -76,6 +76,10 @@
         "storageLevel": {
             "type": "number",
             "description": "Percentage of food remaining in the main storage container."
+        },
+        "currentWeight": {
+            "type": "number",
+            "description": "The current weight of food in the storage container, in grams."
         }
       },
       "required": ["id", "ownerId", "name"]

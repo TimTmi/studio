@@ -78,10 +78,14 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
   const firestore = useFirestore();
   const isOnline = feeder.status === 'online';
   const bowlLevel = feeder.bowlLevel ?? 0;
-  const storageLevel = feeder.storageLevel ?? 0;
   
+  // Assume a max capacity for the storage container, e.g., 2000 grams
+  const MAX_STORAGE_WEIGHT = 2000;
+  const currentWeight = feeder.currentWeight ?? 0;
+  const storageLevelPercent = Math.min(Math.round((currentWeight / MAX_STORAGE_WEIGHT) * 100), 100);
+
   const isLowBowl = bowlLevel < 25;
-  const isLowStorage = storageLevel < 25;
+  const isLowStorage = storageLevelPercent < 25;
 
   const handleFeedNow = () => {
     if (!feeder.id) return;
@@ -114,7 +118,7 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
         <div className="space-y-4">
             <LevelBar 
                 label="Storage Level" 
-                value={storageLevel} 
+                value={storageLevelPercent} 
                 icon={<Archive />}
                 isLow={isLowStorage && isOnline} 
             />

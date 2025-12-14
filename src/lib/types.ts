@@ -16,6 +16,7 @@ export type Feeder = {
   status?: 'online' | 'offline';
   bowlLevel?: number;
   storageLevel?: number;
+  currentWeight?: number;
 }
 
 export type FeedingSchedule = {
