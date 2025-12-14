@@ -37,7 +37,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
 
     if (logs) {
         logs.forEach(log => {
-        const logDate = new Date(log.timestamp);
+        const logDate = new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp);
         logDate.setHours(0,0,0,0);
         
         // Only include logs from the last 7 days
@@ -62,7 +62,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
         <Card>
             <CardHeader>
                 <CardTitle>Feeding Analytics</CardTitle>
-                <CardDescription>Total food dispensed (in cups) over the last 7 days.</CardDescription>
+                <CardDescription>Total food dispensed (in grams) over the last 7 days.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Skeleton className="h-[200px] w-full" />
@@ -75,13 +75,13 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>Feeding Analytics</CardTitle>
-        <CardDescription>Total food dispensed (in cups) over the last 7 days.</CardDescription>
+        <CardDescription>Total food dispensed (in grams) over the last 7 days.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer
           config={{
             amount: {
-              label: 'Cups',
+              label: 'Grams',
               color: 'hsl(var(--primary))',
             },
           }}
@@ -100,7 +100,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={10}
-                unit="c"
+                unit="g"
             />
             <ChartTooltip
               cursor={false}

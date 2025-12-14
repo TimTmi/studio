@@ -43,9 +43,15 @@ export default function LogsPage() {
 
   const { data: feedingLogs, isLoading: areLogsLoading } = useCollection(logsQuery);
   
-  const isLoading = isUserLoading || isProfileLoading || areLogsLoading;
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  if (isLoading || !user) {
+  if (isProfileLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -96,7 +102,7 @@ export default function LogsPage() {
                     <TableCell>
                       {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>
-                    <TableCell className="text-right">{log.portionSize} cups</TableCell>
+                    <TableCell className="text-right">{log.portionSize} grams</TableCell>
                   </TableRow>
                 ))
               ) : (

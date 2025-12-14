@@ -84,7 +84,7 @@ export function FeederCard({ userProfile, lastFeedingTime, nextFeedingTime }: Fe
     const logsCollectionRef = collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`);
     const newLog = {
       feederId: userProfile.feederId,
-      portionSize: 0.5, // Default for manual feed
+      portionSize: 50, // Default for manual feed in grams
       timestamp: serverTimestamp(),
     };
     addDocumentNonBlocking(logsCollectionRef, newLog);

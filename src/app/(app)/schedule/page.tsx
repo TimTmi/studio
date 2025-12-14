@@ -43,15 +43,22 @@ export default function SchedulePage() {
   
   const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
   
-  const isLoading = isUserLoading || isProfileLoading;
-  
-  if (isLoading || !user) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (isProfileLoading) {
+    return (
+      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   if (!userProfile?.feederId) {
     return (
@@ -116,7 +123,7 @@ export default function SchedulePage() {
                       {userProfile?.name || 'My Feeder'}
                     </TableCell>
                     <TableCell>{schedule.scheduledTime}</TableCell>
-                    <TableCell>{schedule.portionSize} cups</TableCell>
+                    <TableCell>{schedule.portionSize} grams</TableCell>
                     <TableCell className="flex gap-1">
                       {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
                         <Badge key={day} variant="secondary">

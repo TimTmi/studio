@@ -80,7 +80,7 @@
         },
         "portionSize": {
           "type": "number",
-          "description": "The amount of food dispensed."
+          "description": "The amount of food dispensed in grams."
         }
       },
       "required": [
@@ -111,7 +111,7 @@
         },
         "portionSize": {
           "type": "number",
-          "description": "The amount of food dispensed."
+          "description": "The amount of food dispensed in grams."
         }
       },
       "required": [

@@ -33,8 +33,8 @@ const scheduleFormSchema = z.object({
   scheduledTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
     message: 'Time must be in HH:MM format (e.g., 08:30)',
   }),
-  portionSize: z.coerce.number().min(0.1, {
-    message: 'Portion must be at least 0.1 cups.',
+  portionSize: z.coerce.number().min(1, {
+    message: 'Portion must be at least 1 gram.',
   }),
 });
 
@@ -52,7 +52,7 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
       scheduledTime: '',
-      portionSize: 0.5,
+      portionSize: 50,
     },
   });
 
@@ -107,9 +107,9 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
               name="portionSize"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Portion Size (cups)</FormLabel>
+                  <FormLabel>Portion Size (grams)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.1" {...field} />
+                    <Input type="number" step="1" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
