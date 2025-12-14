@@ -128,7 +128,7 @@ export function ChatInterface() {
               {message.role === 'assistant' && (
                 <Avatar className="h-9 w-9 border">
                   <AvatarFallback>
-                    <Image src="/FoodCatCatFood.png" alt="AI avt" />
+                    <Image src="/FoodCatCatFood.png" alt="AI avt" width={50} height={50}/>
                   </AvatarFallback>
                 </Avatar>
               )}
