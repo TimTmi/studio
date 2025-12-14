@@ -90,7 +90,7 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Feeding Schedules</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-accent">Feeding Schedules</h1>
         <p className="text-muted-foreground">
           Create a feeding schedule personalized for your pet!
         </p>
