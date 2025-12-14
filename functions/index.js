@@ -18,14 +18,8 @@ if (!mqttConfig || !mqttConfig.username || !mqttConfig.password) {
 
 const MQTT_HOST = "a63c6d5a32cf4a67b9d6a209a8e13525.s1.eu.hivemq.cloud";
 const MQTT_PORT = "8883"; // Secure TLS port
-const MQTT_TOPICS = [
-  "bowl",
-  "portion",
-  "weight",
-  "storage/percent",
-  "storage/weight",
-  "storage/state",
-];
+const MQTT_TOPIC_PREFIX = "feeders";
+const MQTT_WILDCARD_TOPIC = `${MQTT_TOPIC_PREFIX}/+/+`; // Subscribes to all feeders and all their sub-topics
 
 // --- MQTT Client Setup ---
 // This client is for listening to messages FROM the device
@@ -36,9 +30,9 @@ const client = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
 
 client.on("connect", () => {
   functions.logger.info("[MQTT Listener] Connected to HiveMQ Broker.");
-  client.subscribe(MQTT_TOPICS, (err) => {
+  client.subscribe(MQTT_WILDCARD_TOPIC, (err) => {
     if (!err) {
-      functions.logger.info(`[MQTT Listener] Subscribed to topics: ${MQTT_TOPICS.join(", ")}`);
+      functions.logger.info(`[MQTT Listener] Subscribed to wildcard topic: ${MQTT_WILDCARD_TOPIC}`);
     } else {
       functions.logger.error("[MQTT Listener] Subscription error:", err);
     }
@@ -53,9 +47,21 @@ client.on("message", async (topic, message) => {
   const payload = message.toString();
   functions.logger.info(`[MQTT Listener] Message from topic "${topic}": ${payload}`);
 
-  // In a real-world multi-feeder app, the feeder ID would be part of the topic
-  // For this project, we assume a single feeder with a known ID.
-  const feederId = "YOUR_FEEDER_ID"; // IMPORTANT: Replace with your actual Feeder ID
+  // Topic structure is expected to be "feeders/{feederId}/{metric}"
+  // e.g., "feeders/my-esp32-123/storage/percent"
+  const topicParts = topic.split("/");
+  if (topicParts.length < 3 || topicParts[0] !== MQTT_TOPIC_PREFIX) {
+    functions.logger.warn(`Ignoring message from invalid topic: ${topic}`);
+    return;
+  }
+
+  const feederId = topicParts[1];
+  const metric = topicParts.slice(2).join('/'); // Handles metrics like "storage/percent"
+
+  if (!feederId) {
+      functions.logger.warn(`Could not extract feederId from topic: ${topic}`);
+      return;
+  }
 
   try {
     const usersQuery = db.collection("users").where("feederId", "==", feederId).limit(1);
@@ -69,8 +75,8 @@ client.on("message", async (topic, message) => {
     const userDoc = snapshot.docs[0];
     let updateData = {};
 
-    // Map MQTT topics to Firestore fields
-    switch (topic) {
+    // Map MQTT metrics to Firestore fields
+    switch (metric) {
       case "storage/percent":
         updateData = { bowlLevel: parseFloat(payload) };
         break;
@@ -82,10 +88,10 @@ client.on("message", async (topic, message) => {
 
     if (Object.keys(updateData).length > 0) {
       await userDoc.ref.update(updateData);
-      functions.logger.info(`Updated Firestore for user ${userDoc.id} with:`, updateData);
+      functions.logger.info(`Updated Firestore for user ${userDoc.id} (feeder: ${feederId}) with:`, updateData);
     }
   } catch (error) {
-    functions.logger.error("Error updating Firestore from MQTT message:", error);
+    functions.logger.error(`Error updating Firestore for feeder ${feederId}:`, error);
   }
 });
 
@@ -145,6 +151,15 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
                     functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
                 } else {
                     functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
+                    // Log the feeding event to Firestore
+                    const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
+                    logRef.set({
+                        feederId: feederId,
+                        portionSize: portionSize,
+                        timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    }).catch(logErr => {
+                        functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
+                    });
                 }
             });
         });
