@@ -124,7 +124,6 @@ export default function SettingsPage() {
                 />
                 <AvatarFallback>{userProfile?.firstName?.charAt(0)}</AvatarFallback>
               </Avatar>
-              <Button>Change Photo</Button>
             </div>
             <form onSubmit={handleProfileSave} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
