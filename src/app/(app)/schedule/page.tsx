@@ -33,27 +33,19 @@ export default function SchedulePage() {
 
   const schedulesQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
+    // See note in logs/page.tsx about this path.
+    // A better structure would be `/users/{userId}/feedingSchedules`.
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
       orderBy('scheduledTime', 'asc')
     );
   }, [firestore, userProfile?.feederId]);
   
-  const feederRef = useMemoFirebase(() => {
-    if (!userProfile?.feederId) return null;
-    return doc(firestore, `feeders/${userProfile.feederId}`);
-  }, [firestore, userProfile?.feederId]);
-
   const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
-  const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
   
-  const getFeederName = () => {
-    return feeder?.name || 'Unknown Feeder';
-  };
-
-  const isLoading = isUserLoading || isProfileLoading || areSchedulesLoading || isFeederLoading;
+  const isLoading = isUserLoading || isProfileLoading || areSchedulesLoading;
   
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Bone className="h-8 w-8 animate-spin text-primary" />
@@ -110,7 +102,7 @@ export default function SchedulePage() {
                 schedules.map((schedule) => (
                   <TableRow key={schedule.id}>
                     <TableCell className="font-medium">
-                      {getFeederName()}
+                      {userProfile?.name || 'My Feeder'}
                     </TableCell>
                     <TableCell>{schedule.scheduledTime}</TableCell>
                     <TableCell>{schedule.portionSize} cups</TableCell>

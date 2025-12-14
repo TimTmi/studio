@@ -18,20 +18,35 @@ export default function DashboardPage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  const feederRef = useMemoFirebase(() => {
-    if (!userProfile?.feederId) return null;
-    return doc(firestore, `feeders/${userProfile.feederId}`);
-  }, [firestore, userProfile?.feederId]);
+  const isLoading = isUserLoading || isProfileLoading;
 
-  const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
-
-  const isLoading = isUserLoading || isProfileLoading || isFeederLoading;
-
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Bone className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (!userProfile) {
+    // This can happen briefly during loading or if the profile doc doesn't exist
+    return (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
+            <h3 className="text-lg font-semibold">Loading Profile...</h3>
+            <p className="mb-4 text-sm text-muted-foreground">Just a moment while we fetch your details.</p>
+        </div>
+    );
+  }
+  
+  if (!userProfile.feederId) {
+    return (
+       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
+            <h3 className="text-lg font-semibold">No Feeder Linked</h3>
+            <p className="mb-4 text-sm text-muted-foreground">You haven't linked a pet feeder to your account yet.</p>
+            <Button asChild>
+                <Link href="/settings">Go to Settings</Link>
+            </Button>
+        </div>
     );
   }
 
@@ -44,23 +59,9 @@ export default function DashboardPage() {
         </p>
       </div>
       
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <FeederCard.Skeleton />
-        </div>
-      ) : feeder ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <FeederCard feeder={feeder} />
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
-            <h3 className="text-lg font-semibold">No Feeder Linked</h3>
-            <p className="mb-4 text-sm text-muted-foreground">You haven't linked a pet feeder to your account yet.</p>
-            <Button asChild>
-                <Link href="/settings">Go to Settings</Link>
-            </Button>
-        </div>
-      )}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <FeederCard userProfile={userProfile} />
+      </div>
     </div>
   );
 }

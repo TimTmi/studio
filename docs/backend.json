@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user profile in the PetPal Hub application.",
+      "description": "Represents a user profile in the PetPal Hub application, including embedded feeder data.",
       "properties": {
         "id": {
           "type": "string",
@@ -29,7 +29,33 @@
         },
         "feederId": {
           "type": "string",
-          "description": "The ID of the single feeder linked to this user's account. (Relationship: Feeder 1:1 UserProfile)"
+          "description": "The ID of the single feeder linked to this user's account."
+        },
+        "name": {
+            "type": "string",
+            "description": "Name of the feeder."
+        },
+        "location": {
+            "type": "string",
+            "description": "Location of the feeder."
+        },
+        "petType": {
+            "type": "string",
+            "enum": ["dog", "cat"]
+        },
+        "status": {
+            "type": "string",
+            "enum": ["online", "offline"]
+        },
+        "bowlLevel": {
+            "type": "number"
+        },
+        "nextFeeding": {
+            "type": "object",
+            "properties": {
+                "time": {"type": "string"},
+                "amount": {"type": "number"}
+            }
         }
       },
       "required": [
@@ -37,30 +63,6 @@
         "email",
         "firstName",
         "lastName"
-      ]
-    },
-    "Feeder": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Feeder",
-      "type": "object",
-      "description": "Represents a pet feeder device.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the feeder."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the feeder."
-        },
-        "location": {
-          "type": "string",
-          "description": "Location of the feeder."
-        }
-      },
-      "required": [
-        "id",
-        "name"
       ]
     },
     "FeedingSchedule": {
@@ -75,7 +77,7 @@
         },
         "feederId": {
           "type": "string",
-          "description": "Reference to Feeder. (Relationship: Feeder 1:N FeedingSchedule)"
+          "description": "ID of the feeder this schedule belongs to."
         },
         "scheduledTime": {
           "type": "string",
@@ -106,7 +108,7 @@
         },
         "feederId": {
           "type": "string",
-          "description": "Reference to Feeder. (Relationship: Feeder 1:N FeedingLog)"
+          "description": "ID of the feeder this log belongs to."
         },
         "timestamp": {
           "type": "string",
@@ -141,27 +143,11 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information, including the linked feeder ID.",
+          "description": "Stores user profile information, including the linked feeder ID and its properties.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user. Corresponds to the Firebase Auth UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/feeders/{feederId}",
-        "definition": {
-          "entityName": "Feeder",
-          "schema": {
-            "$ref": "#/backend/entities/Feeder"
-          },
-          "description": "Top-level collection for all feeder devices. Access is controlled via user profiles.",
-          "params": [
-            {
-              "name": "feederId",
-              "description": "The unique identifier for the feeder."
             }
           ]
         }
@@ -173,7 +159,7 @@
           "schema": {
             "$ref": "#/backend/entities/FeedingSchedule"
           },
-          "description": "Stores feeding schedules for a specific feeder.",
+          "description": "Stores feeding schedules for a specific feeder. The path exists for logical grouping but is secured by user profile.",
           "params": [
             {
               "name": "feederId",
@@ -193,7 +179,7 @@
           "schema": {
             "$ref": "#/backend/entities/FeedingLog"
           },
-          "description": "Stores feeding logs for a specific feeder.",
+          "description": "Stores feeding logs for a specific feeder. The path exists for logical grouping but is secured by user profile.",
           "params": [
             {
               "name": "feederId",
@@ -207,6 +193,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is simplified to support one feeder per user. The `feederId` is stored directly in the user's profile (`/users/{userId}`). The `feeders` collection is now at the root level. This enforces a one-to-one relationship between a user and a feeder and simplifies security rules. A user can only access the data of the feeder whose ID is stored in their profile."
+    "reasoning": "The Firestore data structure is simplified to support one feeder per user. The `feederId` and all feeder properties are stored directly in the user's profile (`/users/{userId}`). This enforces a one-to-one relationship and simplifies security rules, as a user only needs access to their own profile document to get all relevant data. Subcollections for logs and schedules still use the feederId in their path for organizational purposes, but access is controlled via the user's profile."
   }
 }

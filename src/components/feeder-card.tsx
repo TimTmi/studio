@@ -12,42 +12,29 @@ import {
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
-
-// Note: The Feeder type from types.ts is now coming from Firestore, which might have different field names.
-// It's good practice to create a new type or adapt the existing one.
-// For now, we will assume the structure is compatible.
-export type Feeder = {
-  id: string;
-  name: string;
-  petType: 'dog' | 'cat';
-  status: 'online' | 'offline';
-  bowlLevel: number;
-  nextFeeding: {
-    time: string;
-    amount: number;
-  };
-};
+import type { UserProfile } from '@/lib/types';
 
 
 type FeederCardProps = {
-  feeder: Feeder;
+  userProfile: UserProfile;
 };
 
-export function FeederCard({ feeder }: FeederCardProps) {
-  const isOnline = feeder.status === 'online';
-  const isLowFood = feeder.bowlLevel < 25;
+export function FeederCard({ userProfile }: FeederCardProps) {
+  const isOnline = userProfile.status === 'online';
+  const bowlLevel = userProfile.bowlLevel ?? 0;
+  const isLowFood = bowlLevel < 25;
 
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle className="flex items-center gap-2">
-            {feeder.petType === 'dog' ? <Dog /> : <Cat />}
-            {feeder.name}
+            {userProfile.petType === 'dog' ? <Dog /> : <Cat />}
+            {userProfile.name}
           </CardTitle>
           <Badge variant={isOnline ? 'default' : 'destructive'} className="shrink-0">
             {isOnline ? <Zap className="mr-1 h-3 w-3" /> : <ZapOff className="mr-1 h-3 w-3" />}
-            {feeder.status}
+            {userProfile.status}
           </Badge>
         </div>
         <CardDescription>Manage your pet's feeding schedule and monitor their food supply.</CardDescription>
@@ -57,17 +44,17 @@ export function FeederCard({ feeder }: FeederCardProps) {
           <div className="mb-2 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Bowl Level</span>
             <span className={`font-medium ${isLowFood ? 'text-destructive' : 'text-foreground'}`}>
-              {feeder.bowlLevel}%
+              {bowlLevel}%
             </span>
           </div>
-          <Progress value={feeder.bowlLevel} aria-label={`${feeder.bowlLevel}% food remaining`} />
+          <Progress value={bowlLevel} aria-label={`${bowlLevel}% food remaining`} />
           {isLowFood && isOnline && <p className="mt-2 text-xs text-destructive">Food level is low. Please refill soon.</p>}
         </div>
-        {feeder.nextFeeding && (
+        {userProfile.nextFeeding && (
              <div>
                 <div className="text-sm text-muted-foreground">Next Feeding</div>
-                <div className="text-lg font-semibold">{feeder.nextFeeding.time}</div>
-                <div className="text-sm text-muted-foreground">{feeder.nextFeeding.amount} cups</div>
+                <div className="text-lg font-semibold">{userProfile.nextFeeding.time}</div>
+                <div className="text-sm text-muted-foreground">{userProfile.nextFeeding.amount} cups</div>
             </div>
         )}
       </CardContent>

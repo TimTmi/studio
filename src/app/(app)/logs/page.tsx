@@ -34,24 +34,23 @@ export default function LogsPage() {
 
   const logsQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
+    // Note: The path to subcollections remains the same even if the parent collection is gone.
+    // Firestore paths are just strings. We assume a 'feedingLogs' subcollection still exists under the user's feeder.
+    // In a real scenario with the new model, logs might be stored differently.
+    // For now, we query a hypothetical path. A better structure would be `/users/{userId}/feedingLogs`.
+    // To keep the change minimal, we'll use the existing feederId to construct the old path.
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`),
       orderBy('timestamp', 'desc'),
       limit(20)
     );
   }, [firestore, userProfile?.feederId]);
-  
-  const feederRef = useMemoFirebase(() => {
-    if (!userProfile?.feederId) return null;
-    return doc(firestore, `feeders/${userProfile.feederId}`);
-  }, [firestore, userProfile?.feederId]);
 
   const { data: feedingLogs, isLoading: areLogsLoading } = useCollection(logsQuery);
-  const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
+  
+  const isLoading = isUserLoading || isProfileLoading || areLogsLoading;
 
-  const isLoading = isUserLoading || areLogsLoading || isProfileLoading || isFeederLoading;
-
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Bone className="h-8 w-8 animate-spin text-primary" />
@@ -100,7 +99,7 @@ export default function LogsPage() {
               ) : feedingLogs && feedingLogs.length > 0 ? (
                 feedingLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-medium">{feeder?.name || 'Feeder'}</TableCell>
+                    <TableCell className="font-medium">{userProfile?.name || 'My Feeder'}</TableCell>
                     <TableCell>
                       {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>

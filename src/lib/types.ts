@@ -7,11 +7,8 @@ export type UserProfile = {
   lastName: string;
   settings?: string;
   feederId?: string;
-}
-
-export type Feeder = {
-  id: string;
-  name: string;
+  // Feeder properties are now embedded
+  name?: string;
   location?: string;
   petType?: 'dog' | 'cat';
   status?: 'online' | 'offline';
@@ -20,7 +17,7 @@ export type Feeder = {
     time: string;
     amount: number;
   };
-};
+}
 
 export type FeedingSchedule = {
   id: string;
@@ -47,6 +44,7 @@ export type User = {
   notifications: {
     feedingReminders: boolean;
     lowFoodAlerts: boolean;
+
   };
 };
 
