@@ -36,6 +36,7 @@ export type FeedingLog = {
   feederId: string;
   timestamp: Timestamp;
   portionSize: number;
+  source?: 'manual' | 'scheduled';
 };
 
 export type Notification = {
@@ -63,6 +64,5 @@ export type Schedule = {
   id: string;
   feederId: string;
   time: string;
-  amount: number; // in cups
   days: string[];
 };
