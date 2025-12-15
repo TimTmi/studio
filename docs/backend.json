@@ -111,10 +111,6 @@
           "format": "date-time",
           "description": "The date and time the feeder is scheduled to dispense food."
         },
-        "portionSize": {
-          "type": "number",
-          "description": "The amount of food dispensed in grams."
-        },
         "sent": {
           "type": "boolean",
           "description": "Indicates if the feeding command has been sent to the feeder."
@@ -123,8 +119,7 @@
       "required": [
         "id",
         "feederId",
-        "scheduledTime",
-        "portionSize"
+        "scheduledTime"
       ]
     },
     "FeedingLog": {

@@ -113,7 +113,6 @@ export default function SchedulePage() {
               <TableRow>
                 <TableHead>Feeder</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead>Amount</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -122,7 +121,6 @@ export default function SchedulePage() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>Loading...</TableCell>
-                    <TableCell>...</TableCell>
                     <TableCell>...</TableCell>
                     <TableCell className="text-right">...</TableCell>
                   </TableRow>
@@ -134,7 +132,6 @@ export default function SchedulePage() {
                       {feeder?.name || 'My Feeder'}
                     </TableCell>
                     <TableCell>{schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'PPP p')}</TableCell>
-                    <TableCell>{schedule.portionSize} grams</TableCell>
                     <TableCell className="text-right">
                       <EditScheduleDialog schedule={schedule} />
                     </TableCell>
@@ -142,7 +139,7 @@ export default function SchedulePage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     No upcoming schedules found.
                   </TableCell>
                 </TableRow>

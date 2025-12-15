@@ -122,17 +122,17 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
         functions.logger.info('[MQTT Publisher] Connected to HiveMQ Broker for publishing.');
         const promises = snapshot.docs.map(doc => {
             const schedule = doc.data();
-            const { feederId, portionSize } = schedule;
+            const { feederId } = schedule;
+            const portionSize = 50; // Default portion size for scheduled feed
             
-            if (!feederId || !portionSize) {
+            if (!feederId) {
                 functions.logger.warn(`Skipping invalid schedule: ${doc.id}`);
                 return Promise.resolve();
             }
 
             const commandTopic = `feeders/${feederId}/commands`;
             const commandPayload = JSON.stringify({
-                command: 'dispense',
-                portionSize: portionSize
+                command: 'dispense'
             });
 
             const publishPromise = new Promise((resolve, reject) => {
@@ -202,8 +202,7 @@ exports.manualFeed = functions.https.onCall(async (data, context) => {
 
     const commandTopic = `${MQTT_TOPIC_PREFIX}/${feederId}/commands`;
     const commandPayload = JSON.stringify({
-        command: 'dispense',
-        portionSize: portionSize
+        command: 'dispense'
     });
     
     const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {

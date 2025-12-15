@@ -33,9 +33,6 @@ const scheduleFormSchema = z.object({
   scheduledTime: z.date({
     required_error: "A date and time is required.",
   }),
-  portionSize: z.coerce.number().min(1, {
-    message: 'Portion must be at least 1 gram.',
-  }),
 });
 
 type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
@@ -52,7 +49,6 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
       scheduledTime: new Date(),
-      portionSize: 50,
     },
   });
 
@@ -86,7 +82,7 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
         <DialogHeader>
           <DialogTitle>Add New Schedule</DialogTitle>
           <DialogDescription>
-            Enter the date, time, and portion size for the new feeding schedule.
+            Enter the date and time for the new feeding schedule.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -103,19 +99,6 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
                       value={field.value ? new Date(field.value.getTime() - field.value.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
                       onChange={(e) => field.onChange(new Date(e.target.value))}
                      />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="portionSize"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Portion Size (grams)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="1" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

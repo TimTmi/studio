@@ -26,7 +26,6 @@ export type FeedingSchedule = {
   id: string;
   feederId: string;
   scheduledTime: Timestamp;
-  portionSize: number;
 };
 
 export type FeedingLog = {
