@@ -1,4 +1,4 @@
-# **App Name**: PetPal Hub
+# **App Name**: FoodFPet
 
 ## Core Features:
 

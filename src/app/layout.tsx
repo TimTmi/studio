@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "FoodFPet",
   description: "Manage your automated pet feeders with ease.",
+  icons: {
+    icon: '/icon.png', 
+  },
 };
 
 export default function RootLayout({

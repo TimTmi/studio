@@ -32,7 +32,7 @@ export default function AppLayout({
   }
 
   if (!user) {
-    return null; // Or a redirect component
+    return null; 
   }
 
   return (
