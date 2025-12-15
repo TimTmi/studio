@@ -31,18 +31,11 @@ export type Feeder = {
   }
 }
 
-export type FeedingSchedule = {
-  id: string;
-  feederId: string;
-  scheduledTime: Timestamp;
-};
-
 export type FeedingLog = {
   id: string;
   feederId: string;
   timestamp: Timestamp;
   portionSize: number;
-  amount: number; // for chart
 };
 
 export type Notification = {

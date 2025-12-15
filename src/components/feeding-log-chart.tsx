@@ -44,8 +44,7 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
         if(logDate.getTime() >= today.getTime() - 6 * 24 * 60 * 60 * 1000) {
             const dateString = logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             if (dataByDay.hasOwnProperty(dateString)) {
-                const amount = (log as any).portionSize || log.amount;
-                dataByDay[dateString] += amount;
+                dataByDay[dateString] += log.portionSize;
             }
         }
         });
