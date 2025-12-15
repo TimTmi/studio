@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user profile in the PetPal Hub application, including embedded feeder data.",
+      "description": "Represents a user profile in the FoodFPet application.",
       "properties": {
         "id": {
           "type": "string",
@@ -15,13 +15,51 @@
           "description": "User's email address.",
           "format": "email"
         },
-        "settings": {
+        "firstName": {
           "type": "string",
-          "description": "User settings (can be stored as a JSON string)."
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "settings": {
+          "type": "object",
+          "description": "User notification settings.",
+          "properties": {
+            "feedingReminders": {
+              "type": "boolean",
+              "description": "Enable or disable feeding reminders."
+            },
+            "lowFoodAlerts": {
+              "type": "boolean",
+              "description": "Enable or disable low food alerts."
+            }
+          }
         },
         "feederId": {
           "type": "string",
           "description": "The ID of the single feeder linked to this user's account."
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ]
+    },
+    "Feeder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feeder",
+      "type": "object",
+      "description": "Represents a pet feeder device.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feeder."
+        },
+        "ownerId": {
+            "type": "string",
+            "description": "The UID of the user who owns this feeder."
         },
         "name": {
             "type": "string",
@@ -42,47 +80,30 @@
         "bowlLevel": {
             "type": "number",
             "description": "Percentage of food remaining in the bowl."
+        },
+        "storageLevel": {
+            "type": "number",
+            "description": "Percentage of food remaining in the main storage container."
+        },
+        "currentWeight": {
+            "type": "number",
+            "description": "The current weight of food in the storage container, in grams."
+        },
+        "weeklySchedule": {
+            "type": "object",
+            "description": "Recurring weekly feeding schedule.",
+            "properties": {
+                "sunday":    { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
+                "monday":    { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
+                "tuesday":   { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
+                "wednesday": { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
+                "thursday":  { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
+                "friday":    { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
+                "saturday":  { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } }
+            }
         }
       },
-      "required": [
-        "id",
-        "email"
-      ]
-    },
-    "FeedingSchedule": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FeedingSchedule",
-      "type": "object",
-      "description": "Represents a scheduled feeding event for a specific feeder.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the feeding schedule."
-        },
-        "feederId": {
-          "type": "string",
-          "description": "ID of the feeder this schedule belongs to."
-        },
-        "scheduledTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time the feeder is scheduled to dispense food."
-        },
-        "portionSize": {
-          "type": "number",
-          "description": "The amount of food dispensed in grams."
-        },
-        "sent": {
-          "type": "boolean",
-          "description": "Indicates if the feeding command has been sent to the feeder."
-        }
-      },
-      "required": [
-        "id",
-        "feederId",
-        "scheduledTime",
-        "portionSize"
-      ]
+      "required": ["id", "ownerId", "name"]
     },
     "FeedingLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -114,6 +135,37 @@
         "timestamp",
         "portionSize"
       ]
+    },
+    "Notification": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Notification",
+        "type": "object",
+        "description": "Represents a notification for a user about a feeder event.",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "Unique identifier for the notification."
+            },
+            "feederId": {
+                "type": "string",
+                "description": "ID of the feeder this notification relates to."
+            },
+            "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The time the notification was created."
+            },
+            "status": {
+                "type": "string",
+                "enum": ["success", "failed"],
+                "description": "The status of the event."
+            },
+            "message": {
+                "type": "string",
+                "description": "The notification message to be displayed to the user."
+            }
+        },
+        "required": ["id", "feederId", "timestamp", "status", "message"]
     }
   },
   "auth": {
@@ -131,7 +183,7 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information, including the linked feeder ID and its properties.",
+          "description": "Stores user profile information.",
           "params": [
             {
               "name": "userId",
@@ -141,21 +193,17 @@
         }
       },
       {
-        "path": "/feeders/{feederId}/feedingSchedules/{scheduleId}",
+        "path": "/feeders/{feederId}",
         "definition": {
-          "entityName": "FeedingSchedule",
+          "entityName": "Feeder",
           "schema": {
-            "$ref": "#/backend/entities/FeedingSchedule"
+            "$ref": "#/backend/entities/Feeder"
           },
-          "description": "Stores feeding schedules for a specific feeder. The path exists for logical grouping but is secured by user profile.",
+          "description": "Stores all data and state for a specific feeder device, including its weekly schedule.",
           "params": [
-            {
+             {
               "name": "feederId",
-              "description": "The unique identifier for the feeder."
-            },
-            {
-              "name": "scheduleId",
-              "description": "The unique identifier for the feeding schedule."
+              "description": "The unique identifier for the feeder device."
             }
           ]
         }
@@ -167,7 +215,7 @@
           "schema": {
             "$ref": "#/backend/entities/FeedingLog"
           },
-          "description": "Stores feeding logs for a specific feeder. The path exists for logical grouping but is secured by user profile.",
+          "description": "Stores feeding logs for a specific feeder.",
           "params": [
             {
               "name": "feederId",
@@ -179,8 +227,28 @@
             }
           ]
         }
+      },
+      {
+        "path": "/feeders/{feederId}/notifications/{notificationId}",
+        "definition": {
+            "entityName": "Notification",
+            "schema": {
+                "$ref": "#/backend/entities/Notification"
+            },
+            "description": "Stores notifications for a specific feeder.",
+            "params": [
+                {
+                    "name": "feederId",
+                    "description": "The unique identifier for the feeder."
+                },
+                {
+                    "name": "notificationId",
+                    "description": "The unique identifier for the notification."
+                }
+            ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is simplified to support one feeder per user. The `feederId` and all feeder properties are stored directly in the user's profile (`/users/{userId}`). This enforces a one-to-one relationship and simplifies security rules, as a user only needs access to their own profile document to get all relevant data. Subcollections for logs and schedules still use the feederId in their path for organizational purposes, but access is controlled via the user's profile."
+    "reasoning": "The data model is now normalized. User data is in `/users/{userId}`. Device data is in a separate top-level collection `/feeders/{feederId}`. The user's profile contains a `feederId` to link them to their device. The weekly recurring schedule is stored on the feeder document itself. Notifications and logs are stored in subcollections under each feeder."
   }
 }

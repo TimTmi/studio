@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { Feeder } from '@/lib/types';
+import { getNextFeedingTime } from '@/lib/schedule-utils';
+
 
 export default function HomePage() {
   const { user, isUserLoading } = useUser();
@@ -38,17 +40,15 @@ export default function HomePage() {
 
   const { data: lastLog, isLoading: isLastLogLoading } = useCollection(lastLogQuery);
 
-  const nextScheduleQuery = useMemoFirebase(() => {
-    if (!userProfile?.feederId) return null;
-    return query(
-      collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
-      where('scheduledTime', '>=', Timestamp.now()),
-      orderBy('scheduledTime', 'asc'),
-      limit(1)
-    );
-  }, [firestore, userProfile?.feederId]);
+  const [nextFeedingTime, setNextFeedingTime] = useState<Timestamp | null>(null);
 
-  const { data: schedules, isLoading: isSchedulesLoading } = useCollection(nextScheduleQuery);
+  useEffect(() => {
+    if (feeder?.weeklySchedule) {
+      const next = getNextFeedingTime(feeder.weeklySchedule);
+      setNextFeedingTime(next ? Timestamp.fromDate(next) : null);
+    }
+  }, [feeder?.weeklySchedule]);
+
 
   const isLoading = isUserLoading || isProfileLoading;
 
@@ -72,7 +72,7 @@ export default function HomePage() {
     );
   }
   
-  const isDataLoading = isFeederLoading || isLastLogLoading || isSchedulesLoading;
+  const isDataLoading = isFeederLoading || isLastLogLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -93,7 +93,7 @@ export default function HomePage() {
               <FeederCard 
                 feeder={feeder}
                 lastFeedingTime={lastLog?.[0]?.timestamp}
-                nextFeedingTime={schedules?.[0]?.scheduledTime}
+                nextFeedingTime={nextFeedingTime}
               />
             </div>
           }

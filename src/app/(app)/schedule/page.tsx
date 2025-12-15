@@ -1,5 +1,4 @@
 'use client';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -8,22 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, doc, Timestamp, where } from 'firebase/firestore';
-import { PlusCircle, Bone, Loader2 } from 'lucide-react';
-import { AddScheduleDialog } from '@/components/add-schedule-dialog';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { EditScheduleDialog } from '@/components/edit-schedule-dialog';
+import { AddScheduleDialog } from '@/components/add-schedule-dialog';
 import type { Feeder } from '@/lib/types';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
+const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -43,40 +35,51 @@ export default function SchedulePage() {
 
   const { data: feeder, isLoading: isFeederLoading } = useDoc<Feeder>(feederRef);
 
-  const schedulesQuery = useMemoFirebase(() => {
-    if (!userProfile?.feederId) return null;
-    return query(
-      collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
-      where('sent', '==', false),
-      orderBy('scheduledTime', 'asc')
-    );
-  }, [firestore, userProfile?.feederId]);
+  const handleAddTime = (days: string[], time: string, applyToAll: boolean) => {
+    if (!feederRef || !feeder) return;
+
+    const newSchedule = { ...feeder.weeklySchedule };
+
+    const daysToUpdate = applyToAll ? DAYS_OF_WEEK : days;
+
+    daysToUpdate.forEach(day => {
+        const daySchedule = newSchedule[day as keyof typeof newSchedule] || [];
+        if (!daySchedule.includes(time)) {
+            daySchedule.push(time);
+            // Sort times chronologically
+            daySchedule.sort((a, b) => a.localeCompare(b));
+        }
+        newSchedule[day as keyof typeof newSchedule] = daySchedule;
+    });
+
+    setDocumentNonBlocking(feederRef, { weeklySchedule: newSchedule }, { merge: true });
+  };
   
-  const { data: schedules, isLoading: areSchedulesLoading } = useCollection(schedulesQuery);
-  
-  if (isUserLoading || !user) {
+  const handleDeleteTime = (day: string, time: string) => {
+    if (!feederRef || !feeder?.weeklySchedule) return;
+
+    const newSchedule = { ...feeder.weeklySchedule };
+    const daySchedule = newSchedule[day as keyof typeof newSchedule];
+    if (daySchedule) {
+      newSchedule[day as keyof typeof newSchedule] = daySchedule.filter(t => t !== time);
+      setDocumentNonBlocking(feederRef, { weeklySchedule: newSchedule }, { merge: true });
+    }
+  };
+
+  if (isUserLoading || isProfileLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  if (isProfileLoading) {
-    return (
-      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
 
   if (!userProfile?.feederId) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-12 text-center">
         <h3 className="text-lg font-semibold">No Feeder Linked</h3>
         <p className="mb-4 text-sm text-muted-foreground">
-          You need to link a feeder on the settings page before you can add schedules.
+          You need to link a feeder on the settings page before you can manage schedules.
         </p>
         <Button asChild>
           <Link href="/settings">Go to Settings</Link>
@@ -85,69 +88,62 @@ export default function SchedulePage() {
     );
   }
 
-  const isLoading = areSchedulesLoading || isFeederLoading;
-
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-accent">Feeding Schedules</h1>
-        <p className="text-muted-foreground">
-          Create a feeding schedule personalized for your pet!
-        </p>
-      </div>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-2">
-              <CardTitle className="text-primary">Upcoming Schedules</CardTitle>
-              <CardDescription>
-               Currently active feeding schedules.
-              </CardDescription>
-            </div>
-            <AddScheduleDialog feederId={userProfile.feederId} />
+      <div className="flex items-center justify-between">
+          <div>
+              <h1 className="text-2xl font-bold tracking-tight text-accent">Weekly Feeding Routine</h1>
+              <p className="text-muted-foreground">
+              Set up a recurring feeding schedule for your pet.
+              </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Feeder</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>Loading...</TableCell>
-                    <TableCell>...</TableCell>
-                    <TableCell className="text-right">...</TableCell>
-                  </TableRow>
-                ))
-              ) : schedules && schedules.length > 0 ? (
-                schedules.map((schedule) => (
-                  <TableRow key={schedule.id}>
-                    <TableCell className="font-medium">
-                      {feeder?.name || 'My Feeder'}
-                    </TableCell>
-                    <TableCell>{schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'PPP p')}</TableCell>
-                    <TableCell className="text-right">
-                      <EditScheduleDialog schedule={schedule} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No upcoming schedules found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <AddScheduleDialog onAddTime={handleAddTime} />
+      </div>
+
+        {isFeederLoading ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {DAYS_OF_WEEK.map(day => <SkeletonCard key={day} />)}
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {DAYS_OF_WEEK.map(day => (
+                <Card key={day}>
+                <CardHeader>
+                    <CardTitle className="capitalize text-primary">{day}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {feeder?.weeklySchedule?.[day as keyof Feeder['weeklySchedule']] && feeder.weeklySchedule[day as keyof Feeder['weeklySchedule']].length > 0 ? (
+                    <div className="space-y-2">
+                        {feeder.weeklySchedule[day as keyof Feeder['weeklySchedule']].map((time) => (
+                        <div key={time} className="flex items-center justify-between rounded-md bg-muted/50 p-2 text-sm">
+                            <span className="font-mono">{time}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteTime(day, time)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className="sr-only">Delete time {time}</span>
+                            </Button>
+                        </div>
+                        ))}
+                    </div>
+                    ) : (
+                    <p className="text-sm text-muted-foreground">No feedings scheduled.</p>
+                    )}
+                </CardContent>
+                </Card>
+            ))}
+            </div>
+        )}
     </div>
   );
 }
+
+
+const SkeletonCard = () => (
+    <Card>
+      <CardHeader>
+        <div className="h-6 w-2/4 rounded-md bg-muted animate-pulse" />
+      </CardHeader>
+      <CardContent>
+        <div className="h-8 w-full rounded-md bg-muted/50 animate-pulse" />
+      </CardContent>
+    </Card>
+)

@@ -12,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -23,52 +22,48 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useFirestore } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, Timestamp } from 'firebase/firestore';
 import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Checkbox } from './ui/checkbox';
+
+const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const scheduleFormSchema = z.object({
-  scheduledTime: z.date({
-    required_error: "A date and time is required.",
-  }),
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid time in HH:mm format."),
+  days: z.array(z.string()).min(1, "Please select at least one day."),
+  applyToAll: z.boolean().default(false),
+}).refine(data => data.applyToAll || data.days.length > 0, {
+    message: "Please select at least one day or check 'Apply to all days'.",
+    path: ["days"],
 });
+
 
 type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
 
 interface AddScheduleDialogProps {
-  feederId: string;
+  onAddTime: (days: string[], time: string, applyToAll: boolean) => void;
 }
 
-export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
+export function AddScheduleDialog({ onAddTime }: AddScheduleDialogProps) {
   const [open, setOpen] = useState(false);
-  const firestore = useFirestore();
 
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
-      scheduledTime: new Date(),
+      time: '08:00',
+      days: [],
+      applyToAll: false,
     },
   });
 
   function onSubmit(data: ScheduleFormValues) {
-    if (!feederId) return;
-
-    const schedulesCollectionRef = collection(
-      firestore,
-      `feeders/${feederId}/feedingSchedules`
-    );
-    const newSchedule = {
-      ...data,
-      scheduledTime: Timestamp.fromDate(data.scheduledTime),
-      feederId,
-      sent: false, // Initialize 'sent' to false
-    };
-    addDocumentNonBlocking(schedulesCollectionRef, newSchedule);
-    form.reset();
-    setOpen(false); // Close the dialog
+    onAddTime(data.days, data.time, data.applyToAll);
+    form.reset({ time: form.getValues('time'), days: [], applyToAll: false });
+    setOpen(false);
   }
+
+  const applyToAll = form.watch('applyToAll');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -78,36 +73,82 @@ export function AddScheduleDialog({ feederId }: AddScheduleDialogProps) {
           Add Schedule
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Schedule</DialogTitle>
+          <DialogTitle>Add New Routine</DialogTitle>
           <DialogDescription>
-            Enter the date and time for the new feeding schedule.
+            Select the days and time for a recurring feeding.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="scheduledTime"
+              name="time"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Scheduled Date & Time</FormLabel>
+                  <FormLabel>Feeding Time</FormLabel>
                   <FormControl>
                      <Input 
-                      type="datetime-local"
-                      value={field.value ? new Date(field.value.getTime() - field.value.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                      type="time"
+                      {...field}
                      />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="applyToAll"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Apply to all days
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {!applyToAll && (
+                <FormField
+                control={form.control}
+                name="days"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Days of the Week</FormLabel>
+                    <FormControl>
+                        <ToggleGroup 
+                            type="multiple" 
+                            variant="outline" 
+                            className="flex-wrap justify-start"
+                            value={field.value}
+                            onValueChange={field.onChange}
+                        >
+                            {DAYS_OF_WEEK.map(day => (
+                                <ToggleGroupItem key={day} value={day} aria-label={`Toggle ${day}`} className="capitalize">
+                                    {day.substring(0,3)}
+                                </ToggleGroupItem>
+                            ))}
+                        </ToggleGroup>
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            )}
+
             <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary">Cancel</Button>
-                </DialogClose>
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit">Save Schedule</Button>
             </DialogFooter>
           </form>

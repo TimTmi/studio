@@ -109,91 +109,97 @@ exports.mqttListener = functions.https.onRequest((request, response) => {
 });
 
 
+const getDayOfWeek = (now) => {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    // Use UTC day to avoid timezone shifts affecting the day of the week
+    return days[now.getUTCDay()];
+};
+
 /**
- * A Pub/Sub-triggered function to check for scheduled feedings.
+ * A Pub/Sub-triggered function to check for scheduled feedings based on weekly routines.
  */
-exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
-  functions.logger.info("Running scheduled feeding check...");
+exports.checkSchedules = functions.runWith({
+    timeZone: "UTC"
+}).pubsub.schedule('every 1 minutes').onRun(async (context) => {
+    const now = new Date();
+    const currentDay = getDayOfWeek(now);
+    const currentTime = `${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')}`;
 
-  const now = admin.firestore.Timestamp.now();
-  const oneMinuteFromNow = admin.firestore.Timestamp.fromMillis(now.toMillis() + 60000);
+    functions.logger.info(`Running routine check for ${currentDay} at ${currentTime} UTC...`);
 
-  try {
-    const schedulesRef = db.collectionGroup('feedingSchedules');
-    const query = schedulesRef
-      .where('scheduledTime', '>=', now)
-      .where('scheduledTime', '<', oneMinuteFromNow)
-      .where('sent', '==', false);
-    const snapshot = await query.get();
+    try {
+        const feedersSnapshot = await db.collection('feeders').get();
+        if (feedersSnapshot.empty) {
+            functions.logger.info("No feeders found.");
+            return;
+        }
 
-    if (snapshot.empty) {
-      functions.logger.info(`No feedings scheduled for the next minute.`);
-      return;
-    }
-    
-    const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
-      username: mqttConfig.username,
-      password: mqttConfig.password,
-    });
-
-    publisher.on('connect', () => {
-        functions.logger.info('[MQTT Publisher] Connected to HiveMQ Broker for publishing.');
-        const promises = snapshot.docs.map(doc => {
-            const schedule = doc.data();
-            const { feederId } = schedule;
-            const portionSize = 50; // Default portion size
+        const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
+            username: mqttConfig.username,
+            password: mqttConfig.password,
+        });
+        
+        publisher.on('connect', () => {
+            functions.logger.info('[MQTT Publisher] Connected to HiveMQ Broker for publishing.');
             
-            if (!feederId) {
-                functions.logger.warn(`Skipping invalid schedule: ${doc.id}`);
-                return Promise.resolve();
+            const publishPromises = [];
+
+            feedersSnapshot.forEach(feederDoc => {
+                const feeder = feederDoc.data();
+                const feederId = feederDoc.id;
+                const schedule = feeder.weeklySchedule?.[currentDay];
+
+                if (schedule && schedule.includes(currentTime)) {
+                    functions.logger.info(`Match found for feeder ${feederId} at ${currentTime} on ${currentDay}.`);
+                    
+                    const commandTopic = `feeders/${feederId}/commands`;
+                    const commandPayload = JSON.stringify({ command: 'dispense' });
+                    
+                    const publishPromise = new Promise((resolve, reject) => {
+                        publisher.publish(commandTopic, commandPayload, (err) => {
+                            if (err) {
+                                functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
+                                createNotification(feederId, 'failed', 'Scheduled feeding command failed to send.');
+                                reject(err);
+                            } else {
+                                functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
+                                createNotification(feederId, 'success', 'A scheduled feeding has been dispensed.');
+                                const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
+                                logRef.set({
+                                    feederId: feederId,
+                                    portionSize: 50, // Default portion size
+                                    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                                    source: 'scheduled'
+                                }).catch(logErr => {
+                                    functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
+                                });
+                                resolve();
+                            }
+                        });
+                    });
+                    publishPromises.push(publishPromise);
+                }
+            });
+
+             if (publishPromises.length > 0) {
+                Promise.all(publishPromises).finally(() => {
+                    setTimeout(() => publisher.end(), 2000);
+                });
+            } else {
+                publisher.end();
             }
 
-            const commandTopic = `feeders/${feederId}/commands`;
-            const commandPayload = JSON.stringify({
-                command: 'dispense'
-            });
-
-            const publishPromise = new Promise((resolve, reject) => {
-                 publisher.publish(commandTopic, commandPayload, (err) => {
-                    if (err) {
-                        functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
-                        createNotification(feederId, 'failed', 'Scheduled feeding command failed to send.');
-                        reject(err);
-                    } else {
-                        functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
-                        createNotification(feederId, 'success', 'Scheduled feeding has been dispensed.');
-                        const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
-                        logRef.set({
-                            feederId: feederId,
-                            portionSize: portionSize,
-                            timestamp: admin.firestore.FieldValue.serverTimestamp()
-                        }).catch(logErr => {
-                            functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
-                        });
-                        doc.ref.update({ sent: true }).catch(updateErr => {
-                            functions.logger.error(`Failed to update schedule ${doc.id}:`, updateErr);
-                        });
-                        resolve();
-                    }
-                });
-            });
-            return publishPromise;
+        });
+        
+        publisher.on('error', (err) => {
+            functions.logger.error('[MQTT Publisher] Connection error:', err);
         });
 
-        Promise.all(promises).finally(() => {
-            setTimeout(() => publisher.end(), 2000);
-        });
-    });
-    
-    publisher.on('error', (err) => {
-        functions.logger.error('[MQTT Publisher] Connection error:', err);
-    });
+    } catch (error) {
+        functions.logger.error("Error checking routine schedules:", error);
+    }
 
-  } catch (error) {
-    functions.logger.error("Error checking schedules and publishing commands:", error);
-  }
-
-  return null;
+    return null;
 });
 
 
