@@ -1,5 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -7,16 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
-import { Loader2, Trash2 } from 'lucide-react';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, doc, query, where, orderBy, deleteDoc, Timestamp } from 'firebase/firestore';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { AddScheduleDialog } from '@/components/add-schedule-dialog';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import type { Feeder } from '@/lib/types';
-import { format, parse } from 'date-fns';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import type { FeedingSchedule } from '@/lib/types';
+import { format } from 'date-fns';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import {
   Table,
   TableBody,
@@ -25,15 +25,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-
-const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
+import { Input } from '@/components/ui/input';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState('12:00');
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user?.uid) return null;
@@ -42,56 +42,58 @@ export default function SchedulePage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  const feederRef = useMemoFirebase(() => {
+  const schedulesQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
-    return doc(firestore, `feeders/${userProfile.feederId}`);
+    return query(
+      collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
+      where('scheduledTime', '>=', new Date()),
+      orderBy('scheduledTime', 'asc')
+    );
   }, [firestore, userProfile?.feederId]);
   
-  const { data: feeder, isLoading: isFeederLoading } = useDoc<Feeder>(feederRef);
+  const { data: schedules, isLoading: areSchedulesLoading } = useCollection<FeedingSchedule>(schedulesQuery);
 
-
-  const handleAddSchedule = async (days: string[], time: string, applyToAll: boolean) => {
-      if (!feederRef) return;
-
-      const newSchedule = { ...feeder?.weeklySchedule };
-
-      const daysToUpdate = applyToAll ? DAYS_OF_WEEK : days;
-      
-      daysToUpdate.forEach(day => {
-        const daySchedule = newSchedule[day as keyof typeof newSchedule] || [];
-        if (!daySchedule.includes(time)) {
-          daySchedule.push(time);
-          daySchedule.sort(); 
-        }
-        newSchedule[day as keyof typeof newSchedule] = daySchedule;
-      });
-
-      try {
-        await setDocumentNonBlocking(feederRef, { weeklySchedule: newSchedule }, { merge: true });
-        toast({ title: 'Schedule Updated', description: 'The new feeding time has been added.' });
-      } catch (error) {
-        toast({ title: 'Error', description: 'Could not update the schedule.', variant: 'destructive' });
-      }
-  };
-  
-  const handleDeleteTime = async (day: string, time: string) => {
-     if (!feederRef || !feeder?.weeklySchedule) return;
-
-      const newSchedule = { ...feeder.weeklySchedule };
-      const daySchedule = newSchedule[day as keyof typeof newSchedule] || [];
-      
-      const updatedDaySchedule = daySchedule.filter(t => t !== time);
-      newSchedule[day as keyof typeof newSchedule] = updatedDaySchedule;
-
-       try {
-        await setDocumentNonBlocking(feederRef, { weeklySchedule: newSchedule }, { merge: true });
-        toast({ title: 'Time Removed', description: 'The feeding time has been removed from the schedule.' });
-      } catch (error) {
-        toast({ title: 'Error', description: 'Could not remove the time.', variant: 'destructive' });
-      }
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!userProfile?.feederId) return;
+    try {
+      const scheduleDocRef = doc(firestore, `feeders/${userProfile.feederId}/feedingSchedules`, scheduleId);
+      await deleteDoc(scheduleDocRef);
+      toast({ title: 'Schedule Removed', description: 'The feeding has been removed.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Could not remove the schedule.', variant: 'destructive' });
+    }
   };
 
-  const isLoading = isUserLoading || isProfileLoading || isFeederLoading;
+  const handleAddSchedule = async () => {
+    if (!date || !time || !userProfile?.feederId) {
+        toast({ title: 'Incomplete Information', description: 'Please select both a date and a time.', variant: 'destructive'});
+        return;
+    }
+
+    const [hours, minutes] = time.split(':');
+    const scheduledDateTime = new Date(date);
+    scheduledDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+    
+    if (scheduledDateTime < new Date()) {
+        toast({ title: 'Invalid Time', description: 'You cannot schedule a feeding in the past.', variant: 'destructive'});
+        return;
+    }
+
+    const schedulesColRef = collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`);
+
+    try {
+        await addDocumentNonBlocking(schedulesColRef, {
+            feederId: userProfile.feederId,
+            scheduledTime: Timestamp.fromDate(scheduledDateTime),
+            sent: false
+        });
+        toast({ title: 'Schedule Added', description: `A feeding is scheduled for ${format(scheduledDateTime, 'PPP p')}.` });
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not add the schedule.', variant: 'destructive' });
+    }
+  };
+
+  const isLoading = isUserLoading || isProfileLoading;
 
   if (isLoading || !user) {
     return (
@@ -117,44 +119,90 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-          <div>
-              <h1 className="text-2xl font-bold tracking-tight text-accent">Weekly Routine</h1>
-              <p className="text-muted-foreground">
-                Set up a recurring feeding schedule for your pet for each day of the week.
-              </p>
-          </div>
-          <AddScheduleDialog onAddSchedule={handleAddSchedule} />
-      </div>
+        <div>
+            <h1 className="text-2xl font-bold tracking-tight text-accent">Schedule a Feeding</h1>
+            <p className="text-muted-foreground">
+                Add individual feeding times for your pet.
+            </p>
+        </div>
 
-       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {DAYS_OF_WEEK.map(day => (
-                <Card key={day}>
-                    <CardHeader>
-                        <CardTitle className="capitalize text-primary">{day}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {feeder?.weeklySchedule?.[day as keyof Feeder['weeklySchedule']] && feeder.weeklySchedule[day as keyof Feeder['weeklySchedule']].length > 0 ? (
-                           <ul className="space-y-2">
-                            {feeder.weeklySchedule[day as keyof Feeder['weeklySchedule']].map(time => {
-                                const displayTime = format(parse(time, 'HH:mm', new Date()), 'p');
-                                return (
-                                    <li key={time} className="flex items-center justify-between rounded-md bg-muted/50 p-2 text-sm">
-                                        <span>{displayTime}</span>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteTime(day, time)}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </li>
-                                );
-                            })}
-                           </ul>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Add a New Feeding</CardTitle>
+                    <CardDescription>Select a date and time to schedule a single feeding.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="flex justify-center">
+                         <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            className="rounded-md border"
+                            disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))}
+                        />
+                     </div>
+                     <div className='space-y-2'>
+                        <label htmlFor="time-input" className="text-sm font-medium">Time</label>
+                        <Input
+                            id="time-input"
+                            type="time"
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                        />
+                     </div>
+                     <Button onClick={handleAddSchedule} className="w-full">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Feeding Time
+                     </Button>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Upcoming Feedings</CardTitle>
+                    <CardDescription>Here are the next scheduled feeding times.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {areSchedulesLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell className="font-medium">Loading...</TableCell>
+                                <TableCell className="text-right">...</TableCell>
+                            </TableRow>
+                            ))
+                        ) : schedules && schedules.length > 0 ? (
+                            schedules.map((schedule) => (
+                            <TableRow key={schedule.id}>
+                                <TableCell>
+                                    {schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'PPP p')}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteSchedule(schedule.id)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))
                         ) : (
-                            <p className="text-sm text-muted-foreground">No feedings scheduled.</p>
+                            <TableRow>
+                            <TableCell colSpan={2} className="h-24 text-center">
+                                No upcoming feedings scheduled.
+                            </TableCell>
+                            </TableRow>
                         )}
-                    </CardContent>
-                </Card>
-            ))}
-       </div>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
     </div>
   );
 }
