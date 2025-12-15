@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Checkbox } from './ui/checkbox';
 
@@ -63,17 +63,14 @@ export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDi
   function onSubmit(data: ScheduleFormValues) {
     const daysToSchedule = data.applyToAll ? DAYS_OF_WEEK : data.days || [];
     onAddSchedule(daysToSchedule, data.time, data.weeks);
-    // We don't close the dialog until the generation is complete, which will be handled by the parent component
   }
   
-  // This effect can be used if the parent component should control the 'open' state
-  // For example, closing it after isGenerating becomes false.
-  // useEffect(() => {
-  //   if (!isGenerating) {
-  //     setOpen(false);
-  //     form.reset();
-  //   }
-  // }, [isGenerating, form]);
+  useEffect(() => {
+    if (!isGenerating && form.formState.isSubmitSuccessful) {
+      setOpen(false);
+      form.reset();
+    }
+  }, [isGenerating, form, form.formState.isSubmitSuccessful]);
 
 
   const applyToAll = form.watch('applyToAll');
@@ -139,7 +136,12 @@ export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDi
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked)
+                        if(checked) {
+                            form.setValue('days', []);
+                        }
+                      }}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
