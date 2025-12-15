@@ -49,7 +49,7 @@ async function getFeederLogs(feederId: string, startDate?: Date, endDate?: Date)
     }
 }
 
-async function getNextDaySchedules(feederId: string) {
+async function getSchedulesForTomorrow(feederId: string) {
     if (!feederId) return [];
     try {
         const schedulesRef = db.collection(`feeders/${feederId}/feedingSchedules`);
@@ -67,7 +67,6 @@ async function getNextDaySchedules(feederId: string) {
             const data = doc.data();
             return {
                 time: data.scheduledTime.toDate().toISOString(),
-                portion: data.portionSize,
             };
         });
 
@@ -118,9 +117,9 @@ export async function getAiResponse(
             break;
         }
         case 'SCHEDULE_TOMORROW': {
-            const schedules = await getNextDaySchedules(feederId);
+            const schedules = await getSchedulesForTomorrow(feederId);
              if (schedules.length > 0) {
-                const scheduleStrings = schedules.map(s => `- At ${new Date(s.time).toLocaleTimeString()}, ${s.portion} grams will be dispensed.`);
+                const scheduleStrings = schedules.map(s => `- At ${new Date(s.time).toLocaleTimeString()}, a feeding is scheduled.`);
                 contextData = `Here are the feeding schedules for tomorrow:\n${scheduleStrings.join('\n')}`;
             } else {
                 contextData = "There are no feedings scheduled for tomorrow.";
