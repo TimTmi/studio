@@ -75,14 +75,16 @@ export default function SchedulePage() {
         
         const data = result.data as { success: boolean; schedulesCreated: number };
 
-        if (data.success) {
-            toast({ title: 'Success!', description: `${data.schedulesCreated} feedings have been scheduled for the next ${weeks} week(s).` });
-        } else {
+        if (data.success && data.schedulesCreated > 0) {
+            toast({ title: 'Success!', description: `${data.schedulesCreated} feedings have been scheduled.` });
+        } else if (data.success) {
              toast({ title: 'Notice', description: 'No new schedules were created. They may have already existed or were in the past.', variant: 'default' });
+        } else {
+            // This case might not be hit if the function throws an error on failure
+            toast({ title: 'Error', description: 'Could not generate schedules.', variant: 'destructive' });
         }
       } catch (error: any) {
-        console.error("Error generating schedules:", error);
-        toast({ title: 'Error', description: error.message || 'Could not generate schedules. Please try again.', variant: 'destructive' });
+        toast({ title: 'Error Generating Schedules', description: error.message || 'An unknown error occurred.', variant: 'destructive' });
       } finally {
         setIsGenerating(false);
       }
@@ -95,7 +97,6 @@ export default function SchedulePage() {
        await deleteDoc(docRef);
        toast({ title: 'Schedule Deleted', description: 'The feeding time has been removed.' });
      } catch (error) {
-       console.error("Error deleting schedule:", error);
        toast({ title: 'Error', description: 'Could not delete the schedule.', variant: 'destructive' });
      }
   };
@@ -165,10 +166,10 @@ export default function SchedulePage() {
                 schedules.map((schedule) => (
                   <TableRow key={schedule.id}>
                     <TableCell className="font-medium">
-                        {format(schedule.scheduledTime.toDate(), 'eeee, MMM d')}
+                        {schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'eeee, MMM d')}
                     </TableCell>
                     <TableCell>
-                      {format(schedule.scheduledTime.toDate(), 'p')}
+                      {schedule.scheduledTime && format(schedule.scheduledTime.toDate(), 'p')}
                     </TableCell>
                     <TableCell className="text-right">
                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteSchedule(schedule.id)}>

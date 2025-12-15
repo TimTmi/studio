@@ -2,9 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Users can get and update their own profile.
-    // 'get' is used instead of 'read' to allow server-side validation (like in a Cloud Function)
-    // to check a specific user's document, while 'list' is disallowed.
+    // Users can get their own profile to validate ownership in Cloud Functions,
+    // and they can update it. New users can create their profile.
     match /users/{userId} {
       allow get, update: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null;
