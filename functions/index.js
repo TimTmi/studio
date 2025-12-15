@@ -128,6 +128,7 @@ exports.generateSchedules = functions.https.onCall(async (data, context) => {
     }
 
     const dayNameToIndex = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+    const selectedDayIndices = days.map(day => dayNameToIndex[day]);
     const [hour, minute] = time.split(':').map(Number);
     
     const batch = db.batch();
@@ -136,23 +137,15 @@ exports.generateSchedules = functions.https.onCall(async (data, context) => {
     let schedulesCreated = 0;
     const now = new Date();
     
-    for (let week = 0; week < weeks; week++) {
-        for (const dayName of days) {
-            const dayIndex = dayNameToIndex[dayName];
-            if (dayIndex === undefined) continue;
+    // Iterate through the next N weeks * 7 days
+    for (let i = 0; i < weeks * 7; i++) {
+        const scheduleDate = new Date();
+        scheduleDate.setDate(scheduleDate.getDate() + i);
+        scheduleDate.setHours(hour, minute, 0, 0);
 
-            const scheduleDate = new Date();
-            scheduleDate.setHours(hour, minute, 0, 0);
-
-            // Move to the current week's target day
-            const currentDay = scheduleDate.getDay();
-            const distance = (dayIndex - currentDay + 7) % 7;
-            scheduleDate.setDate(scheduleDate.getDate() + distance);
-
-            // Add the week offset
-            scheduleDate.setDate(scheduleDate.getDate() + week * 7);
-
-            // Only create schedules in the future
+        // Check if the current day of the loop is one of the selected days
+        if (selectedDayIndices.includes(scheduleDate.getDay())) {
+             // Only create schedules in the future
             if (scheduleDate > now) {
                 const newScheduleRef = schedulesRef.doc();
                 batch.set(newScheduleRef, {
@@ -329,5 +322,7 @@ exports.manualFeed = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'An unexpected error occurred while processing the feed command.');
     }
 });
+
+    
 
     
