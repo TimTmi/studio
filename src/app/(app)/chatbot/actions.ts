@@ -84,7 +84,6 @@ export async function getAiResponse(
     questionKey?: string
 ) {
   let finalPrompt = userQuery;
-  
 
   // If a question key is provided, it's a "smart" button click
   if (questionKey && feederId) {
