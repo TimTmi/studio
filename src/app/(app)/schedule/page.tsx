@@ -43,13 +43,14 @@ export default function SchedulePage() {
     const daysToUpdate = applyToAll ? DAYS_OF_WEEK : days;
 
     daysToUpdate.forEach(day => {
-        const daySchedule = newSchedule[day as keyof typeof newSchedule] || [];
+        const dayKey = day as keyof typeof newSchedule;
+        const daySchedule = newSchedule[dayKey] || [];
         if (!daySchedule.includes(time)) {
             daySchedule.push(time);
             // Sort times chronologically
             daySchedule.sort((a, b) => a.localeCompare(b));
         }
-        newSchedule[day as keyof typeof newSchedule] = daySchedule;
+        newSchedule[dayKey] = daySchedule;
     });
 
     setDocumentNonBlocking(feederRef, { weeklySchedule: newSchedule }, { merge: true });
@@ -59,9 +60,10 @@ export default function SchedulePage() {
     if (!feederRef || !feeder?.weeklySchedule) return;
 
     const newSchedule = { ...feeder.weeklySchedule };
-    const daySchedule = newSchedule[day as keyof typeof newSchedule];
+    const dayKey = day as keyof typeof newSchedule;
+    const daySchedule = newSchedule[dayKey];
     if (daySchedule) {
-      newSchedule[day as keyof typeof newSchedule] = daySchedule.filter(t => t !== time);
+      newSchedule[dayKey] = daySchedule.filter(t => t !== time);
       setDocumentNonBlocking(feederRef, { weeklySchedule: newSchedule }, { merge: true });
     }
   };
@@ -106,30 +108,35 @@ export default function SchedulePage() {
             </div>
         ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {DAYS_OF_WEEK.map(day => (
-                <Card key={day}>
-                <CardHeader>
-                    <CardTitle className="capitalize text-primary">{day}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {feeder?.weeklySchedule?.[day as keyof Feeder['weeklySchedule']] && feeder.weeklySchedule[day as keyof Feeder['weeklySchedule']].length > 0 ? (
-                    <div className="space-y-2">
-                        {feeder.weeklySchedule[day as keyof Feeder['weeklySchedule']].map((time) => (
-                        <div key={time} className="flex items-center justify-between rounded-md bg-muted/50 p-2 text-sm">
-                            <span className="font-mono">{time}</span>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteTime(day, time)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                                <span className="sr-only">Delete time {time}</span>
-                            </Button>
+            {DAYS_OF_WEEK.map(day => {
+                const dayKey = day as keyof NonNullable<Feeder['weeklySchedule']>;
+                const daySchedule = feeder?.weeklySchedule?.[dayKey];
+
+                return (
+                    <Card key={day}>
+                    <CardHeader>
+                        <CardTitle className="capitalize text-primary">{day}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {daySchedule && daySchedule.length > 0 ? (
+                        <div className="space-y-2">
+                            {daySchedule.map((time) => (
+                            <div key={time} className="flex items-center justify-between rounded-md bg-muted/50 p-2 text-sm">
+                                <span className="font-mono">{time}</span>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteTime(day, time)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    <span className="sr-only">Delete time {time}</span>
+                                </Button>
+                            </div>
+                            ))}
                         </div>
-                        ))}
-                    </div>
-                    ) : (
-                    <p className="text-sm text-muted-foreground">No feedings scheduled.</p>
-                    )}
-                </CardContent>
-                </Card>
-            ))}
+                        ) : (
+                        <p className="text-sm text-muted-foreground">No feedings scheduled.</p>
+                        )}
+                    </CardContent>
+                    </Card>
+                );
+            })}
             </div>
         )}
     </div>
