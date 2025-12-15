@@ -140,11 +140,13 @@ exports.generateSchedules = functions.https.onCall(async (data, context) => {
     // Iterate through the next N weeks * 7 days
     for (let i = 0; i < weeks * 7; i++) {
         const scheduleDate = new Date();
+        scheduleDate.setHours(0, 0, 0, 0); // Start from the beginning of today
         scheduleDate.setDate(scheduleDate.getDate() + i);
-        scheduleDate.setHours(hour, minute, 0, 0);
 
         // Check if the current day of the loop is one of the selected days
         if (selectedDayIndices.includes(scheduleDate.getDay())) {
+             scheduleDate.setHours(hour, minute); // Set the time for the scheduled day
+
              // Only create schedules in the future
             if (scheduleDate > now) {
                 const newScheduleRef = schedulesRef.doc();
@@ -322,7 +324,3 @@ exports.manualFeed = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'An unexpected error occurred while processing the feed command.');
     }
 });
-
-    
-
-    

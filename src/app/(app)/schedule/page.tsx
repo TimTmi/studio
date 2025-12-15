@@ -46,6 +46,7 @@ export default function SchedulePage() {
     if (!userProfile?.feederId) return null;
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
+      where('sent', '==', false),
       where('scheduledTime', '>=', new Date()), // Only show future schedules
       orderBy('scheduledTime', 'asc')
     );
@@ -66,15 +67,22 @@ export default function SchedulePage() {
       const generateSchedules = httpsCallable(functions, 'generateSchedules');
 
       try {
-        await generateSchedules({
+        const result = await generateSchedules({
           feederId: userProfile.feederId,
           routine: { days, time },
           weeks,
         });
-        toast({ title: 'Success!', description: `Scheduled feedings for the next ${weeks} week(s).` });
-      } catch (error) {
+        
+        const data = result.data as { success: boolean; schedulesCreated: number };
+
+        if (data.success) {
+            toast({ title: 'Success!', description: `${data.schedulesCreated} feedings have been scheduled for the next ${weeks} week(s).` });
+        } else {
+             toast({ title: 'Notice', description: 'No new schedules were created. They may have already existed or were in the past.', variant: 'default' });
+        }
+      } catch (error: any) {
         console.error("Error generating schedules:", error);
-        toast({ title: 'Error', description: 'Could not generate schedules. Please try again.', variant: 'destructive' });
+        toast({ title: 'Error', description: error.message || 'Could not generate schedules. Please try again.', variant: 'destructive' });
       } finally {
         setIsGenerating(false);
       }
