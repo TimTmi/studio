@@ -31,11 +31,11 @@ const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'f
 
 const scheduleFormSchema = z.object({
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid time in HH:mm format."),
-  days: z.array(z.string()).min(1, "Please select at least one day."),
+  days: z.array(z.string()).optional(), // Make days optional
   applyToAll: z.boolean().default(false),
-}).refine(data => data.applyToAll || data.days.length > 0, {
+}).refine(data => data.applyToAll || (data.days && data.days.length > 0), {
     message: "Please select at least one day or check 'Apply to all days'.",
-    path: ["days"],
+    path: ["days"], // This message will be associated with the days field
 });
 
 
@@ -58,7 +58,7 @@ export function AddScheduleDialog({ onAddTime }: AddScheduleDialogProps) {
   });
 
   function onSubmit(data: ScheduleFormValues) {
-    onAddTime(data.days, data.time, data.applyToAll);
+    onAddTime(data.days || [], data.time, data.applyToAll);
     form.reset({ time: form.getValues('time'), days: [], applyToAll: false });
     setOpen(false);
   }
