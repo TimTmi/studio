@@ -10,17 +10,20 @@ import {
   LayoutDashboard,
   Settings,
   Leaf,
+  Home,
+  CalendarClock,
+  LineChart,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 
 const navItems = [
-  { href: '/home', label: 'Home' },
-  { href: '/schedule', label: 'Feeding Schedule' },
-  { href: '/logs', label: 'Feeding Log' },
-  { href: '/chatbot', label: 'AI Assistant' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/home', label: 'Home', icon: Home },
+  { href: '/schedule', label: 'Feeding Schedule', icon: CalendarClock },
+  { href: '/logs', label: 'Feeding Log', icon: LineChart },
+  { href: '/chatbot', label: 'AI Assistant', icon: Bot },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function MainNav() {
@@ -39,7 +42,7 @@ export function MainNav() {
               : 'text-foreground/70 hover:bg-black/5 hover:text-foreground'
           )}
         >
-          
+          <item.icon className="h-4 w-4" />
           {item.label}
         </Link>
       ))}
