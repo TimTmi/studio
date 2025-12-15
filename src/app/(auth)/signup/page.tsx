@@ -15,6 +15,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -45,8 +46,13 @@ export default function SignupPage() {
         setError(null);
         setIsLoading(true);
 
-        if (!email || !password ) {
+        if (!email || !password || !confirmPassword ) {
             setError('Please fill out all fields.');
+            setIsLoading(false);
+            return;
+        }
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
             setIsLoading(false);
             return;
         }
@@ -97,6 +103,10 @@ export default function SignupPage() {
                 <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
                     <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="confirm-password">Type your password again</Label>
+                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                 </div>
                 {error && <p className="text-destructive text-sm">{error}</p>}
                 <Button className="p-4 rounded-lg text-center text-white font-semibold bg-[#b89f84] hover:bg-[#a68d73] active:bg-[#b89f84]" type='submit' disabled={isLoading}>
