@@ -25,17 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-
-const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+import { Input } from '@/components/ui/input';
 
 export default function SchedulePage() {
   const { user, isUserLoading } = useUser();
@@ -43,8 +34,7 @@ export default function SchedulePage() {
   const { toast } = useToast();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [hour, setHour] = useState('12');
-  const [minute, setMinute] = useState('00');
+  const [time, setTime] = useState('12:00');
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user?.uid) return null;
@@ -76,11 +66,12 @@ export default function SchedulePage() {
   };
 
   const handleAddSchedule = async () => {
-    if (!date || !hour || !minute || !userProfile?.feederId) {
-        toast({ title: 'Incomplete Information', description: 'Please select a date, hour, and minute.', variant: 'destructive'});
+    if (!date || !time || !userProfile?.feederId) {
+        toast({ title: 'Incomplete Information', description: 'Please select a date and time.', variant: 'destructive'});
         return;
     }
 
+    const [hour, minute] = time.split(':');
     const scheduledDateTime = new Date(date);
     scheduledDateTime.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
     
@@ -153,25 +144,13 @@ export default function SchedulePage() {
                         />
                      </div>
                      <div className='space-y-2'>
-                        <Label>Time</Label>
-                        <div className="flex gap-2">
-                            <Select value={hour} onValueChange={setHour}>
-                                <SelectTrigger aria-label="Hour">
-                                    <SelectValue placeholder="Hour" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {hours.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Select value={minute} onValueChange={setMinute}>
-                                <SelectTrigger aria-label="Minute">
-                                    <SelectValue placeholder="Minute" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {minutes.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <Label htmlFor="time">Time</Label>
+                        <Input
+                          id="time"
+                          type="time"
+                          value={time}
+                          onChange={(e) => setTime(e.target.value)}
+                        />
                      </div>
                      <Button onClick={handleAddSchedule} className="w-full">
                         <PlusCircle className="mr-2 h-4 w-4" />
