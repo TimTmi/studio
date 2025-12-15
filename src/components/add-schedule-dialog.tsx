@@ -31,7 +31,6 @@ const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'f
 
 const scheduleFormSchema = z.object({
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid time in HH:mm format."),
-  weeks: z.coerce.number().min(1, "Must be at least 1 week.").max(10, "Cannot schedule more than 10 weeks in advance."),
   days: z.array(z.string()).optional(),
   applyToAll: z.boolean().default(false),
 }).refine(data => data.applyToAll || (data.days && data.days.length > 0), {
@@ -43,36 +42,30 @@ const scheduleFormSchema = z.object({
 type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
 
 interface AddScheduleDialogProps {
-  onAddSchedule: (days: string[], time: string, weeks: number) => void;
-  isGenerating: boolean;
+  onAddSchedule: (days: string[], time: string, applyToAll: boolean) => void;
 }
 
-export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDialogProps) {
+export function AddScheduleDialog({ onAddSchedule }: AddScheduleDialogProps) {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
       time: '08:00',
-      weeks: 1,
       days: [],
       applyToAll: false,
     },
   });
 
-  function onSubmit(data: ScheduleFormValues) {
-    const daysToSchedule = data.applyToAll ? DAYS_OF_WEEK : data.days || [];
-    onAddSchedule(daysToSchedule, data.time, data.weeks);
+  async function onSubmit(data: ScheduleFormValues) {
+    setIsSubmitting(true);
+    await onAddSchedule(data.days || [], data.time, data.applyToAll);
+    setIsSubmitting(false);
+    setOpen(false);
+    form.reset();
   }
   
-  useEffect(() => {
-    if (!isGenerating && form.formState.isSubmitSuccessful) {
-      setOpen(false);
-      form.reset();
-    }
-  }, [isGenerating, form, form.formState.isSubmitSuccessful]);
-
-
   const applyToAll = form.watch('applyToAll');
 
   return (
@@ -85,9 +78,9 @@ export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDi
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Routine</DialogTitle>
+          <DialogTitle>Add New Time</DialogTitle>
           <DialogDescription>
-            Select the days, time, and duration for a recurring feeding.
+            Select the time and which days of the week it should apply to.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -109,25 +102,6 @@ export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDi
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="weeks"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration (in weeks)</FormLabel>
-                  <FormControl>
-                     <Input 
-                      type="number"
-                      min="1"
-                      max="10"
-                      {...field}
-                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             <FormField
               control={form.control}
               name="applyToAll"
@@ -182,9 +156,9 @@ export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDi
             )}
 
             <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={isGenerating}>Cancel</Button>
-              <Button type="submit" disabled={isGenerating}>
-                {isGenerating ? 'Saving...' : 'Save Schedule'}
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={isSubmitting}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Schedule'}
               </Button>
             </DialogFooter>
           </form>

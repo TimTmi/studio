@@ -88,39 +88,22 @@
         "currentWeight": {
             "type": "number",
             "description": "The current weight of food in the storage container, in grams."
+        },
+        "weeklySchedule": {
+            "type": "object",
+            "description": "Weekly feeding schedule.",
+            "properties": {
+                "sunday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }},
+                "monday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }},
+                "tuesday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }},
+                "wednesday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }},
+                "thursday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }},
+                "friday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }},
+                "saturday": { "type": "array", "items": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" }}
+            }
         }
       },
       "required": ["id", "ownerId", "name"]
-    },
-    "FeedingSchedule": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FeedingSchedule",
-      "type": "object",
-      "description": "Represents a scheduled feeding event for a specific feeder.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the feeding schedule."
-        },
-        "feederId": {
-          "type": "string",
-          "description": "ID of the feeder this schedule belongs to."
-        },
-        "scheduledTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time the feeder is scheduled to dispense food."
-        },
-        "sent": {
-          "type": "boolean",
-          "description": "Indicates if the feeding command has been sent to the feeder."
-        }
-      },
-      "required": [
-        "id",
-        "feederId",
-        "scheduledTime"
-      ]
     },
     "FeedingLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -221,26 +204,6 @@
              {
               "name": "feederId",
               "description": "The unique identifier for the feeder device."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/feeders/{feederId}/feedingSchedules/{scheduleId}",
-        "definition": {
-          "entityName": "FeedingSchedule",
-          "schema": {
-            "$ref": "#/backend/entities/FeedingSchedule"
-          },
-          "description": "Stores feeding schedules for a specific feeder.",
-          "params": [
-            {
-              "name": "feederId",
-              "description": "The unique identifier for the feeder."
-            },
-            {
-              "name": "scheduleId",
-              "description": "The unique identifier for the feeding schedule."
             }
           ]
         }
