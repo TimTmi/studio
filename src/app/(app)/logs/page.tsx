@@ -16,12 +16,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FeedingLogChart } from '@/components/feeding-log-chart';
-import { CheckCircle2, XCircle, Bone, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
+import type { Notification } from '@/lib/types';
 
-export default function LogsPage() {
+export default function ActivityPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
@@ -39,26 +39,18 @@ export default function LogsPage() {
   
   const { data: feeder, isLoading: isFeederLoading } = useDoc(feederRef);
 
-  const logsQuery = useMemoFirebase(() => {
+  const activityQuery = useMemoFirebase(() => {
     if (!userProfile?.feederId) return null;
     return query(
-      collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`),
+      collection(firestore, `feeders/${userProfile.feederId}/notifications`),
       orderBy('timestamp', 'desc'),
       limit(20)
     );
   }, [firestore, userProfile?.feederId]);
 
-  const { data: feedingLogs, isLoading: areLogsLoading } = useCollection(logsQuery);
+  const { data: activities, isLoading: areActivitiesLoading } = useCollection<Notification>(activityQuery);
   
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isProfileLoading) {
+  if (isUserLoading || isProfileLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -69,32 +61,30 @@ export default function LogsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-accent">Feeding Logs</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-accent">Activity Feed</h1>
         <p className="text-muted-foreground">
-          Your pet's feeding history and analytics.
+          A history of your pet's feeding events.
         </p>
       </div>
 
-      <FeedingLogChart logs={feedingLogs || []} />
-
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">Recent Feedings</CardTitle>
+          <CardTitle className="text-primary">Recent Events</CardTitle>
           <CardDescription>
-            A log of the most recent feeding events from your device.
+            A log of the most recent events from your device.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Feeder</TableHead>
+                <TableHead>Event</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {areLogsLoading ? (
+              {areActivitiesLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">Loading...</TableCell>
@@ -102,20 +92,25 @@ export default function LogsPage() {
                     <TableCell className="text-right">...</TableCell>
                   </TableRow>
                 ))
-              ) : feedingLogs && feedingLogs.length > 0 ? (
-                feedingLogs.map((log) => (
+              ) : activities && activities.length > 0 ? (
+                activities.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-medium">{feeder?.name || 'My Feeder'}</TableCell>
+                    <TableCell className="font-medium">{log.message}</TableCell>
                     <TableCell>
                       {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>
-                    <TableCell className="text-right">{log.portionSize} grams</TableCell>
+                    <TableCell className="text-right">
+                       <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
+                          {log.status === 'success' ? <CheckCircle2 className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
+                          {log.status}
+                       </Badge>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="h-24 text-center">
-                    No feeding logs found.
+                    No activity found.
                   </TableCell>
                 </TableRow>
               )}

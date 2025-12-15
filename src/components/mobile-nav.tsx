@@ -11,7 +11,7 @@ import Image from 'next/image';
 const navItems = [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/schedule', label: 'Schedule', icon: CalendarClock },
-  { href: '/logs', label: 'Logs', icon: LineChart },
+  { href: '/logs', label: 'Activity', icon: LineChart },
   { href: '/chatbot', label: 'AI Assistant', icon: Bot },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings', label: 'Settings', icon: Settings },

@@ -13,6 +13,7 @@ import {
   Home,
   CalendarClock,
   LineChart,
+  Bell,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/schedule', label: 'Schedule', icon: CalendarClock },
-  { href: '/logs', label: 'Logs', icon: LineChart },
+  { href: '/logs', label: 'Activity', icon: LineChart },
   { href: '/chatbot', label: 'AI Assistant', icon: Bot },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -37,7 +38,7 @@ export function MainNav() {
           href={item.href}
           className={cn(
             'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-            pathname === item.href
+            pathname.startsWith(item.href)
               ? 'bg-accent text-accent-foreground'
               : 'text-foreground/70 hover:bg-black/5 hover:text-foreground'
           )}
