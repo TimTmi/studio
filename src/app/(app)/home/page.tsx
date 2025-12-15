@@ -4,11 +4,9 @@ import { useDoc, useUser, useMemoFirebase, useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection, doc, limit, orderBy, query, where, Timestamp } from 'firebase/firestore';
 import { Bone, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { Feeder } from '@/lib/types';
-import { getNextFeedingTime } from '@/lib/schedule-utils';
 
 
 export default function HomePage() {
@@ -40,14 +38,17 @@ export default function HomePage() {
 
   const { data: lastLog, isLoading: isLastLogLoading } = useCollection(lastLogQuery);
 
-  const [nextFeedingTime, setNextFeedingTime] = useState<Timestamp | null>(null);
-
-  useEffect(() => {
-    if (feeder?.weeklySchedule) {
-      const next = getNextFeedingTime(feeder.weeklySchedule);
-      setNextFeedingTime(next ? Timestamp.fromDate(next) : null);
-    }
-  }, [feeder?.weeklySchedule]);
+  const nextFeedingQuery = useMemoFirebase(() => {
+    if (!userProfile?.feederId) return null;
+    return query(
+      collection(firestore, `feeders/${userProfile.feederId}/feedingSchedules`),
+       where('scheduledTime', '>=', new Date()),
+      orderBy('scheduledTime', 'asc'),
+      limit(1)
+    );
+  }, [firestore, userProfile?.feederId]);
+  
+  const { data: nextFeeding, isLoading: isNextFeedingLoading } = useCollection(nextFeedingQuery);
 
 
   const isLoading = isUserLoading || isProfileLoading;
@@ -72,7 +73,7 @@ export default function HomePage() {
     );
   }
   
-  const isDataLoading = isFeederLoading || isLastLogLoading;
+  const isDataLoading = isFeederLoading || isLastLogLoading || isNextFeedingLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -93,7 +94,7 @@ export default function HomePage() {
               <FeederCard 
                 feeder={feeder}
                 lastFeedingTime={lastLog?.[0]?.timestamp}
-                nextFeedingTime={nextFeedingTime}
+                nextFeedingTime={nextFeeding?.[0]?.scheduledTime}
               />
             </div>
           }

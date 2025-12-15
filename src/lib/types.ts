@@ -20,16 +20,15 @@ export type Feeder = {
   bowlLevel?: number;
   storageLevel?: number;
   currentWeight?: number;
-  weeklySchedule?: {
-    sunday?: string[];
-    monday?: string[];
-    tuesday?: string[];
-    wednesday?: string[];
-    thursday?: string[];
-    friday?: string[];
-    saturday?: string[];
-  }
 }
+
+export type FeedingSchedule = {
+  id: string;
+  feederId: string;
+  scheduledTime: Timestamp;
+  sent: boolean;
+};
+
 
 export type FeedingLog = {
   id: string;

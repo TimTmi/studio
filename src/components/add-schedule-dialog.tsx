@@ -31,37 +31,50 @@ const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'f
 
 const scheduleFormSchema = z.object({
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid time in HH:mm format."),
-  days: z.array(z.string()).optional(), // Make days optional
+  weeks: z.coerce.number().min(1, "Must be at least 1 week.").max(10, "Cannot schedule more than 10 weeks in advance."),
+  days: z.array(z.string()).optional(),
   applyToAll: z.boolean().default(false),
 }).refine(data => data.applyToAll || (data.days && data.days.length > 0), {
     message: "Please select at least one day or check 'Apply to all days'.",
-    path: ["days"], // This message will be associated with the days field
+    path: ["days"],
 });
 
 
 type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
 
 interface AddScheduleDialogProps {
-  onAddTime: (days: string[], time: string, applyToAll: boolean) => void;
+  onAddSchedule: (days: string[], time: string, weeks: number) => void;
+  isGenerating: boolean;
 }
 
-export function AddScheduleDialog({ onAddTime }: AddScheduleDialogProps) {
+export function AddScheduleDialog({ onAddSchedule, isGenerating }: AddScheduleDialogProps) {
   const [open, setOpen] = useState(false);
 
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
       time: '08:00',
+      weeks: 1,
       days: [],
       applyToAll: false,
     },
   });
 
   function onSubmit(data: ScheduleFormValues) {
-    onAddTime(data.days || [], data.time, data.applyToAll);
-    form.reset({ time: form.getValues('time'), days: [], applyToAll: false });
-    setOpen(false);
+    const daysToSchedule = data.applyToAll ? DAYS_OF_WEEK : data.days || [];
+    onAddSchedule(daysToSchedule, data.time, data.weeks);
+    // We don't close the dialog until the generation is complete, which will be handled by the parent component
   }
+  
+  // This effect can be used if the parent component should control the 'open' state
+  // For example, closing it after isGenerating becomes false.
+  // useEffect(() => {
+  //   if (!isGenerating) {
+  //     setOpen(false);
+  //     form.reset();
+  //   }
+  // }, [isGenerating, form]);
+
 
   const applyToAll = form.watch('applyToAll');
 
@@ -77,7 +90,7 @@ export function AddScheduleDialog({ onAddTime }: AddScheduleDialogProps) {
         <DialogHeader>
           <DialogTitle>Add New Routine</DialogTitle>
           <DialogDescription>
-            Select the days and time for a recurring feeding.
+            Select the days, time, and duration for a recurring feeding.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -91,6 +104,25 @@ export function AddScheduleDialog({ onAddTime }: AddScheduleDialogProps) {
                   <FormControl>
                      <Input 
                       type="time"
+                      {...field}
+                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="weeks"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duration (in weeks)</FormLabel>
+                  <FormControl>
+                     <Input 
+                      type="number"
+                      min="1"
+                      max="10"
                       {...field}
                      />
                   </FormControl>
@@ -148,8 +180,10 @@ export function AddScheduleDialog({ onAddTime }: AddScheduleDialogProps) {
             )}
 
             <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Schedule</Button>
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={isGenerating}>Cancel</Button>
+              <Button type="submit" disabled={isGenerating}>
+                {isGenerating ? 'Saving...' : 'Save Schedule'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

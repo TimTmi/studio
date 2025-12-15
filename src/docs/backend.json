@@ -88,22 +88,39 @@
         "currentWeight": {
             "type": "number",
             "description": "The current weight of food in the storage container, in grams."
-        },
-        "weeklySchedule": {
-            "type": "object",
-            "description": "Recurring weekly feeding schedule.",
-            "properties": {
-                "sunday":    { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
-                "monday":    { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
-                "tuesday":   { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
-                "wednesday": { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
-                "thursday":  { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
-                "friday":    { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } },
-                "saturday":  { "type": "array", "items": { "type": "string", "description": "Time in HH:mm format" } }
-            }
         }
       },
       "required": ["id", "ownerId", "name"]
+    },
+    "FeedingSchedule": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FeedingSchedule",
+      "type": "object",
+      "description": "Represents a scheduled feeding event for a specific feeder.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feeding schedule."
+        },
+        "feederId": {
+          "type": "string",
+          "description": "ID of the feeder this schedule belongs to."
+        },
+        "scheduledTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the feeder is scheduled to dispense food."
+        },
+        "sent": {
+          "type": "boolean",
+          "description": "Indicates if the feeding command has been sent to the feeder."
+        }
+      },
+      "required": [
+        "id",
+        "feederId",
+        "scheduledTime"
+      ]
     },
     "FeedingLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -199,11 +216,31 @@
           "schema": {
             "$ref": "#/backend/entities/Feeder"
           },
-          "description": "Stores all data and state for a specific feeder device, including its weekly schedule.",
+          "description": "Stores all data and state for a specific feeder device.",
           "params": [
              {
               "name": "feederId",
               "description": "The unique identifier for the feeder device."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/feeders/{feederId}/feedingSchedules/{scheduleId}",
+        "definition": {
+          "entityName": "FeedingSchedule",
+          "schema": {
+            "$ref": "#/backend/entities/FeedingSchedule"
+          },
+          "description": "Stores feeding schedules for a specific feeder.",
+          "params": [
+            {
+              "name": "feederId",
+              "description": "The unique identifier for the feeder."
+            },
+            {
+              "name": "scheduleId",
+              "description": "The unique identifier for the feeding schedule."
             }
           ]
         }
@@ -249,6 +286,6 @@
         }
       }
     ],
-    "reasoning": "The data model is now normalized. User data is in `/users/{userId}`. Device data is in a separate top-level collection `/feeders/{feederId}`. The user's profile contains a `feederId` to link them to their device. The weekly recurring schedule is stored on the feeder document itself. Notifications and logs are stored in subcollections under each feeder."
+    "reasoning": "The data model is now normalized. User data is in `/users/{userId}`. Device data is in a separate top-level collection `/feeders/{feederId}`. The user's profile contains a `feederId` to link them to their device. Notifications are stored in a subcollection under each feeder for easy retrieval."
   }
 }

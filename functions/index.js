@@ -109,96 +109,157 @@ exports.mqttListener = functions.https.onRequest((request, response) => {
 });
 
 
-const getDayOfWeek = (now) => {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    // Use UTC day to avoid timezone shifts affecting the day of the week
-    return days[now.getUTCDay()];
-};
+exports.generateSchedules = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+    const { feederId, routine, weeks } = data;
+    const { days, time } = routine; // days is an array of day names e.g., ['monday', 'friday']
+    const userId = context.auth.uid;
+
+    if (!feederId || !Array.isArray(days) || !time || !weeks) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing or invalid arguments.');
+    }
+
+    // --- Permission Check ---
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists || userDoc.data().feederId !== feederId) {
+        throw new functions.https.HttpsError('permission-denied', 'You do not have permission to control this feeder.');
+    }
+
+    const dayNameToIndex = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+    const [hour, minute] = time.split(':').map(Number);
+    
+    const batch = db.batch();
+    const schedulesRef = db.collection(`feeders/${feederId}/feedingSchedules`);
+    
+    let schedulesCreated = 0;
+    const now = new Date();
+    
+    for (let week = 0; week < weeks; week++) {
+        for (const dayName of days) {
+            const dayIndex = dayNameToIndex[dayName];
+            if (dayIndex === undefined) continue;
+
+            const scheduleDate = new Date();
+            // Start from today, find the next occurrence of the target day of the week
+            scheduleDate.setDate(scheduleDate.getDate() + (dayIndex - scheduleDate.getDay() + 7) % 7 + (week * 7));
+            scheduleDate.setHours(hour, minute, 0, 0);
+
+            // Only create schedules in the future
+            if (scheduleDate > now) {
+                const newScheduleRef = schedulesRef.doc();
+                batch.set(newScheduleRef, {
+                    feederId: feederId,
+                    scheduledTime: admin.firestore.Timestamp.fromDate(scheduleDate),
+                    sent: false
+                });
+                schedulesCreated++;
+            }
+        }
+    }
+    
+    if (schedulesCreated === 0 && weeks > 0 && days.length > 0) {
+        // This case can happen if the user schedules for today, but the time has already passed.
+        // We can add the next week's schedule for that day as a convenience.
+        for (const dayName of days) {
+            const dayIndex = dayNameToIndex[dayName];
+            if (dayIndex === undefined) continue;
+            
+            const scheduleDate = new Date();
+            scheduleDate.setDate(scheduleDate.getDate() + (dayIndex - scheduleDate.getDay() + 7) % 7 + (weeks * 7));
+            scheduleDate.setHours(hour, minute, 0, 0);
+
+            const newScheduleRef = schedulesRef.doc();
+            batch.set(newScheduleRef, {
+                feederId: feederId,
+                scheduledTime: admin.firestore.Timestamp.fromDate(scheduleDate),
+                sent: false
+            });
+            schedulesCreated++;
+        }
+    }
+
+
+    await batch.commit();
+
+    return { success: true, schedulesCreated };
+});
+
 
 /**
- * A Pub/Sub-triggered function to check for scheduled feedings based on weekly routines.
+ * A Pub/Sub-triggered function to execute scheduled feedings.
  */
 exports.checkSchedules = functions.runWith({
     timeZone: "UTC"
 }).pubsub.schedule('every 1 minutes').onRun(async (context) => {
-    const now = new Date();
-    const currentDay = getDayOfWeek(now);
-    const currentTime = `${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')}`;
+    const now = admin.firestore.Timestamp.now();
+    
+    functions.logger.info(`Running checkSchedules for time <= ${now.toDate().toISOString()}`);
 
-    functions.logger.info(`Running routine check for ${currentDay} at ${currentTime} UTC...`);
+    const dueSchedulesQuery = db.collectionGroup('feedingSchedules')
+        .where('sent', '==', false)
+        .where('scheduledTime', '<=', now);
 
     try {
-        const feedersSnapshot = await db.collection('feeders').get();
-        if (feedersSnapshot.empty) {
-            functions.logger.info("No feeders found.");
-            return;
+        const snapshot = await dueSchedulesQuery.get();
+        if (snapshot.empty) {
+            functions.logger.info("No due schedules found.");
+            return null;
         }
 
         const publisher = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
             username: mqttConfig.username,
             password: mqttConfig.password,
         });
-        
+
         publisher.on('connect', () => {
             functions.logger.info('[MQTT Publisher] Connected to HiveMQ Broker for publishing.');
-            
-            const publishPromises = [];
 
-            feedersSnapshot.forEach(feederDoc => {
-                const feeder = feederDoc.data();
-                const feederId = feederDoc.id;
-                const schedule = feeder.weeklySchedule?.[currentDay];
-
-                if (schedule && schedule.includes(currentTime)) {
-                    functions.logger.info(`Match found for feeder ${feederId} at ${currentTime} on ${currentDay}.`);
-                    
+            const promises = snapshot.docs.map(doc => {
+                return new Promise(async (resolve, reject) => {
+                    const schedule = doc.data();
+                    const feederId = schedule.feederId;
                     const commandTopic = `feeders/${feederId}/commands`;
                     const commandPayload = JSON.stringify({ command: 'dispense' });
-                    
-                    const publishPromise = new Promise((resolve, reject) => {
-                        publisher.publish(commandTopic, commandPayload, (err) => {
-                            if (err) {
-                                functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
-                                createNotification(feederId, 'failed', 'Scheduled feeding command failed to send.');
-                                reject(err);
-                            } else {
-                                functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
-                                createNotification(feederId, 'success', 'A scheduled feeding has been dispensed.');
-                                const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
-                                logRef.set({
+
+                    publisher.publish(commandTopic, commandPayload, async (err) => {
+                        if (err) {
+                            functions.logger.error(`Failed to publish to ${commandTopic} for schedule ${doc.id}:`, err);
+                            await createNotification(feederId, 'failed', 'Scheduled feeding command failed to send.');
+                            reject(err);
+                        } else {
+                            functions.logger.info(`Published command to ${commandTopic} for schedule ${doc.id}`);
+                            // Mark as sent and log the feeding in parallel
+                            await Promise.all([
+                                doc.ref.update({ sent: true }),
+                                createNotification(feederId, 'success', 'A scheduled feeding has been dispensed.'),
+                                db.collection(`feeders/${feederId}/feedingLogs`).add({
                                     feederId: feederId,
                                     portionSize: 50, // Default portion size
                                     timestamp: admin.firestore.FieldValue.serverTimestamp(),
                                     source: 'scheduled'
-                                }).catch(logErr => {
-                                    functions.logger.error(`Failed to create feeding log for ${feederId}:`, logErr);
-                                });
-                                resolve();
-                            }
-                        });
+                                })
+                            ]);
+                            resolve();
+                        }
                     });
-                    publishPromises.push(publishPromise);
-                }
+                });
             });
 
-             if (publishPromises.length > 0) {
-                Promise.all(publishPromises).finally(() => {
-                    setTimeout(() => publisher.end(), 2000);
-                });
-            } else {
-                publisher.end();
-            }
-
+            Promise.allSettled(promises).finally(() => {
+                 setTimeout(() => publisher.end(), 2000);
+            });
         });
-        
+
         publisher.on('error', (err) => {
             functions.logger.error('[MQTT Publisher] Connection error:', err);
         });
 
     } catch (error) {
-        functions.logger.error("Error checking routine schedules:", error);
+        functions.logger.error("Error checking and executing schedules:", error);
     }
-
+    
     return null;
 });
 
