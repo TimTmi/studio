@@ -142,9 +142,15 @@ exports.generateSchedules = functions.https.onCall(async (data, context) => {
             if (dayIndex === undefined) continue;
 
             const scheduleDate = new Date();
-            // Start from today, find the next occurrence of the target day of the week
-            scheduleDate.setDate(scheduleDate.getDate() + (dayIndex - scheduleDate.getDay() + 7) % 7 + (week * 7));
             scheduleDate.setHours(hour, minute, 0, 0);
+
+            // Move to the current week's target day
+            const currentDay = scheduleDate.getDay();
+            const distance = (dayIndex - currentDay + 7) % 7;
+            scheduleDate.setDate(scheduleDate.getDate() + distance);
+
+            // Add the week offset
+            scheduleDate.setDate(scheduleDate.getDate() + week * 7);
 
             // Only create schedules in the future
             if (scheduleDate > now) {
@@ -159,28 +165,6 @@ exports.generateSchedules = functions.https.onCall(async (data, context) => {
         }
     }
     
-    if (schedulesCreated === 0 && weeks > 0 && days.length > 0) {
-        // This case can happen if the user schedules for today, but the time has already passed.
-        // We can add the next week's schedule for that day as a convenience.
-        for (const dayName of days) {
-            const dayIndex = dayNameToIndex[dayName];
-            if (dayIndex === undefined) continue;
-            
-            const scheduleDate = new Date();
-            scheduleDate.setDate(scheduleDate.getDate() + (dayIndex - scheduleDate.getDay() + 7) % 7 + (weeks * 7));
-            scheduleDate.setHours(hour, minute, 0, 0);
-
-            const newScheduleRef = schedulesRef.doc();
-            batch.set(newScheduleRef, {
-                feederId: feederId,
-                scheduledTime: admin.firestore.Timestamp.fromDate(scheduleDate),
-                sent: false
-            });
-            schedulesCreated++;
-        }
-    }
-
-
     await batch.commit();
 
     return { success: true, schedulesCreated };
