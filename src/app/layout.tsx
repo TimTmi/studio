@@ -7,7 +7,7 @@ import { FirebaseClientProvider } from "@/firebase";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "PetPal Hub",
+  title: "FoodFPet",
   description: "Manage your automated pet feeders with ease.",
 };
 
