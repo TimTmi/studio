@@ -18,6 +18,14 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Power, PowerOff } from 'lucide-react';
 import type { Feeder, UserProfile } from '@/lib/types';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+  } from '@/components/ui/dialog';
 
 export default function SettingsPage() {
     const { user, isUserLoading } = useUser();
@@ -33,6 +41,8 @@ export default function SettingsPage() {
     const [feederId, setFeederId] = useState('');
     const [feedingReminders, setFeedingReminders] = useState(false);
     const [lowFoodAlerts, setLowFoodAlerts] = useState(false);
+    const [isPetNameDialogOpen, setIsPetNameDialogOpen] = useState(false);
+    const [petName, setPetName] = useState("");
 
     const feederRef = useMemoFirebase(() => {
         if (!userProfile?.feederId) return null;
@@ -47,7 +57,10 @@ export default function SettingsPage() {
             setFeedingReminders(userProfile.settings?.feedingReminders ?? false);
             setLowFoodAlerts(userProfile.settings?.lowFoodAlerts ?? false);
         }
-    }, [userProfile]);
+        if (feeder) {
+            setPetName(feeder.name || "");
+        }
+    }, [userProfile, feeder]);
     
     const handleFeederSave = (e: FormEvent) => {
         e.preventDefault();
@@ -62,9 +75,18 @@ export default function SettingsPage() {
             setDocumentNonBlocking(feederDocRef, {
                 ownerId: user.uid,
                 id: feederId,
-                name: "Pet's name", 
-                petType: 'cat', 
+                petType: 'cat',
+                name: feeder?.name || "Pet's name"
             }, { merge: true });
+            setIsPetNameDialogOpen(true);
+        }
+    }
+
+    const handlePetNameSave = (e: FormEvent) => {
+        e.preventDefault();
+        if (feederRef && petName) {
+            setDocumentNonBlocking(feederRef, { name: petName }, { merge: true });
+            setIsPetNameDialogOpen(false);
         }
     }
     
@@ -124,6 +146,7 @@ export default function SettingsPage() {
     }
 
   return (
+    <>
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-accent">Settings</h1>
@@ -206,5 +229,34 @@ export default function SettingsPage() {
         </Card>
       </div>
     </div>
+    <Dialog open={isPetNameDialogOpen} onOpenChange={setIsPetNameDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Name Your Pet</DialogTitle>
+                <DialogDescription>
+                    Your feeder is linked! What's your pet's name?
+                </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePetNameSave}>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="pet-name" className="text-right">
+                            Pet Name
+                        </Label>
+                        <Input
+                            id="pet-name"
+                            value={petName}
+                            onChange={(e) => setPetName(e.target.value)}
+                            className="col-span-3"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="submit">Save Name</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }

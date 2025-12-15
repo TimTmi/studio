@@ -15,7 +15,7 @@ import { Skeleton } from './ui/skeleton';
 import type { Feeder } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -28,33 +28,44 @@ type FeederCardProps = {
 };
 
 const TimeDisplay = ({ time, prefix }: { time?: Timestamp; prefix: string;}) => {
-    const [relativeTime, setRelativeTime] = useState('');
+    const [displayTime, setDisplayTime] = useState('N/A');
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
-        const updateRelativeTime = () => {
+        const updateDisplayTime = () => {
             if (!time) {
-                setRelativeTime('N/A');
+                setDisplayTime('N/A');
                 return;
             }
 
             const dateToCompare = time.toDate();
-            setRelativeTime(formatDistanceToNow(dateToCompare, { addSuffix: true }));
+            if (prefix === "Last fed") {
+                 setDisplayTime(formatDistanceToNow(dateToCompare, { addSuffix: true }));
+            } else {
+                 setDisplayTime(format(dateToCompare, 'PPP p'));
+            }
         };
 
-        updateRelativeTime();
-        // Update every minute to keep the time fresh
-        intervalId = setInterval(updateRelativeTime, 60000); 
+        updateDisplayTime();
+        
+        if (prefix === "Last fed") {
+          // Update every minute for relative time
+          intervalId = setInterval(updateDisplayTime, 60000); 
+        }
 
-        return () => clearInterval(intervalId);
-    }, [time]);
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [time, prefix]);
 
     return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {prefix === "Last fed" ? <History className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
             <span>{prefix}:</span>
-            <span className="font-medium text-foreground">{relativeTime}</span>
+            <span className="font-medium text-foreground">{displayTime}</span>
         </div>
     );
 };
