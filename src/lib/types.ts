@@ -36,6 +36,14 @@ export type FeedingLog = {
   amount: number; // for chart
 };
 
+export type Notification = {
+    id: string;
+    feederId: string;
+    timestamp: Timestamp;
+    status: 'success' | 'failed';
+    message: string;
+}
+
 // Legacy type from mock data, can be removed once all components are updated
 export type User = {
   name: string;

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Home, CalendarClock, LineChart, Bot, Settings } from 'lucide-react';
+import { Menu, Home, CalendarClock, LineChart, Bot, Settings, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -10,9 +10,10 @@ import Image from 'next/image';
 
 const navItems = [
   { href: '/home', label: 'Home', icon: Home },
-  { href: '/schedule', label: 'Feeding Schedule', icon: CalendarClock },
-  { href: '/logs', label: 'Feeding Log', icon: LineChart },
+  { href: '/schedule', label: 'Schedule', icon: CalendarClock },
+  { href: '/logs', label: 'Logs', icon: LineChart },
   { href: '/chatbot', label: 'AI Assistant', icon: Bot },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

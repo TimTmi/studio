@@ -18,6 +18,24 @@ const MQTT_PORT = "8883"; // Secure TLS port
 const MQTT_TOPIC_PREFIX = "feeders";
 const MQTT_WILDCARD_TOPIC = `${MQTT_TOPIC_PREFIX}/+/+`; // Subscribes to all feeders and all their sub-topics
 
+// --- Helper to create notifications ---
+const createNotification = async (feederId, status, message) => {
+    if (!feederId) return;
+    const notification = {
+        feederId,
+        status,
+        message,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    try {
+        await db.collection(`feeders/${feederId}/notifications`).add(notification);
+        functions.logger.info(`Created '${status}' notification for feeder ${feederId}`);
+    } catch (error) {
+        functions.logger.error(`Failed to create notification for feeder ${feederId}:`, error);
+    }
+};
+
+
 // --- MQTT Client Setup (for listening) ---
 const client = mqtt.connect(`mqtts://${MQTT_HOST}:${MQTT_PORT}`, {
   username: mqttConfig.username,
@@ -123,7 +141,7 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
         const promises = snapshot.docs.map(doc => {
             const schedule = doc.data();
             const { feederId } = schedule;
-            const portionSize = 50; // Default portion size for scheduled feed
+            const portionSize = 50; // Default portion size
             
             if (!feederId) {
                 functions.logger.warn(`Skipping invalid schedule: ${doc.id}`);
@@ -139,9 +157,11 @@ exports.checkSchedules = functions.pubsub.schedule('every 1 minutes').onRun(asyn
                  publisher.publish(commandTopic, commandPayload, (err) => {
                     if (err) {
                         functions.logger.error(`Failed to publish to ${commandTopic}:`, err);
+                        createNotification(feederId, 'failed', 'Scheduled feeding command failed to send.');
                         reject(err);
                     } else {
                         functions.logger.info(`Published command to ${commandTopic}: ${commandPayload}`);
+                        createNotification(feederId, 'success', 'Scheduled feeding has been dispensed.');
                         const logRef = db.collection(`feeders/${feederId}/feedingLogs`).doc();
                         logRef.set({
                             feederId: feederId,
@@ -217,15 +237,18 @@ exports.manualFeed = functions.https.onCall(async (data, context) => {
                 publisher.end(); // Close connection after publishing
                 if (err) {
                     functions.logger.error(`Failed to publish command to ${commandTopic}:`, err);
+                    createNotification(feederId, 'failed', 'Manual feed command failed to send.');
                     reject(new functions.https.HttpsError('internal', 'Failed to publish MQTT command.'));
                 } else {
                     functions.logger.info(`Successfully published command to ${commandTopic}: ${commandPayload}`);
+                    createNotification(feederId, 'success', 'Manual feed command sent successfully.');
                     resolve();
                 }
             });
         });
         publisher.on('error', (err) => {
             functions.logger.error(`[MQTT Publisher] Connection error for ${feederId}:`, err);
+            createNotification(feederId, 'failed', 'Could not connect to feeder for manual feed.');
             publisher.end();
             reject(new functions.https.HttpsError('internal', 'MQTT connection failed.'));
         });

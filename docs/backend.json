@@ -152,6 +152,37 @@
         "timestamp",
         "portionSize"
       ]
+    },
+    "Notification": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Notification",
+        "type": "object",
+        "description": "Represents a notification for a user about a feeder event.",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "Unique identifier for the notification."
+            },
+            "feederId": {
+                "type": "string",
+                "description": "ID of the feeder this notification relates to."
+            },
+            "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The time the notification was created."
+            },
+            "status": {
+                "type": "string",
+                "enum": ["success", "failed"],
+                "description": "The status of the event."
+            },
+            "message": {
+                "type": "string",
+                "description": "The notification message to be displayed to the user."
+            }
+        },
+        "required": ["id", "feederId", "timestamp", "status", "message"]
     }
   },
   "auth": {
@@ -233,8 +264,28 @@
             }
           ]
         }
+      },
+      {
+        "path": "/feeders/{feederId}/notifications/{notificationId}",
+        "definition": {
+            "entityName": "Notification",
+            "schema": {
+                "$ref": "#/backend/entities/Notification"
+            },
+            "description": "Stores notifications for a specific feeder.",
+            "params": [
+                {
+                    "name": "feederId",
+                    "description": "The unique identifier for the feeder."
+                },
+                {
+                    "name": "notificationId",
+                    "description": "The unique identifier for the notification."
+                }
+            ]
+        }
       }
     ],
-    "reasoning": "The data model is now normalized. User data is in `/users/{userId}`. Device data is in a separate top-level collection `/feeders/{feederId}`. The user's profile contains a `feederId` to link them to their device. This is a more scalable and maintainable structure."
+    "reasoning": "The data model is now normalized. User data is in `/users/{userId}`. Device data is in a separate top-level collection `/feeders/{feederId}`. The user's profile contains a `feederId` to link them to their device. Notifications are stored in a subcollection under each feeder for easy retrieval."
   }
 }
