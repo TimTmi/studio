@@ -5,10 +5,9 @@ import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Bell, Bone } from 'lucide-react';
+import { Bone } from 'lucide-react';
 import Link from 'next/link';
 import { MobileNav } from '@/components/mobile-nav';
-import { Button } from '@/components/ui/button';
 
 export default function AppLayout({
   children,
@@ -59,12 +58,6 @@ export default function AppLayout({
               <div className="flex items-center gap-2">
                 <MainNav />
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full" asChild>
-                      <Link href="/notifications">
-                          <Bell />
-                          <span className="sr-only">Notifications</span>
-                      </Link>
-                  </Button>
                   <UserNav />
                 </div>
               </div>
