@@ -29,6 +29,10 @@ export default function SignupPage() {
             setDocumentNonBlocking(userDocRef, {
                 id: user.uid,
                 email: user.email,
+                settings: {
+                    feedingReminders: false,
+                    lowFoodAlerts: false,
+                }
             }, { merge: true });
 
             router.push('/home');
