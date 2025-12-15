@@ -1,5 +1,5 @@
 'use client';
-import { Bone, Cat, Dog, Power, PowerOff, Clock, History, Archive, Drumstick } from 'lucide-react';
+import { Bone, Cat, Dog, Power, PowerOff, Clock, History, Archive, Drumstick, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,16 +10,28 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from './ui/skeleton';
 import type { Feeder } from '@/lib/types';
-import { Timestamp } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { Timestamp, doc } from 'firebase/firestore';
+import { useEffect, useState, useMemo, FormEvent } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useFirebaseApp } from '@/firebase';
+import { useFirebaseApp, useFirestore, useMemoFirebase } from '@/firebase';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 
 type FeederCardProps = {
   feeder: Feeder;
@@ -91,6 +103,23 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
   const { toast } = useToast();
   const [isFeeding, setIsFeeding] = useState(false);
   const app = useFirebaseApp();
+  const firestore = useFirestore();
+
+  const [isPetNameDialogOpen, setIsPetNameDialogOpen] = useState(false);
+  const [petName, setPetName] = useState(feeder.name || "");
+  
+  useEffect(() => {
+    if(feeder.name) {
+        setPetName(feeder.name);
+    }
+  }, [feeder.name])
+
+
+  const feederRef = useMemoFirebase(() => {
+    if (!feeder?.id) return null;
+    return doc(firestore, `feeders/${feeder.id}`);
+  }, [firestore, feeder?.id]);
+
   const isOnline = feeder.status === 'online';
   const bowlLevel = feeder.bowlLevel ?? 0;
   const storageLevelPercent = feeder.currentWeight ?? 0;
@@ -123,14 +152,34 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
     }
   };
 
+  const handlePetNameSave = (e: FormEvent) => {
+    e.preventDefault();
+    if (feederRef && petName) {
+        setDocumentNonBlocking(feederRef, { name: petName }, { merge: true });
+        setIsPetNameDialogOpen(false);
+        toast({
+            title: "Pet Name Updated!",
+            description: `Your feeder is now named '${petName}'.`,
+        });
+    }
+  }
+
+
   return (
+    <>
     <Card className="flex w-full flex-col">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <CardTitle className="flex items-center gap-2 text-primary">
-            {feeder.petType === 'dog' ? <Dog /> : <Cat />}
-            {feeder.name}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-primary">
+              {feeder.petType === 'dog' ? <Dog /> : <Cat />}
+              {feeder.name}
+            </CardTitle>
+             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsPetNameDialogOpen(true)}>
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Rename Pet</span>
+            </Button>
+          </div>
           <Badge variant={isOnline ? 'default' : 'destructive'} className="shrink-0">
             {isOnline ? <Power className="mr-1 h-3 w-3" /> : <PowerOff className="mr-1 h-3 w-3" />}
             {feeder.status}
@@ -170,6 +219,36 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
         </Button>
       </CardFooter>
     </Card>
+
+    <Dialog open={isPetNameDialogOpen} onOpenChange={setIsPetNameDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Rename Your Pet</DialogTitle>
+                <DialogDescription>
+                    What would you like to name your pet? This name will be shown on the feeder card.
+                </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePetNameSave}>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="pet-name" className="text-right">
+                            Pet Name
+                        </Label>
+                        <Input
+                            id="pet-name"
+                            value={petName}
+                            onChange={(e) => setPetName(e.target.value)}
+                            className="col-span-3"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="submit">Save Name</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
