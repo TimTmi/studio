@@ -115,10 +115,10 @@ export async function getAiResponse(
         }
         case 'LAST_FEEDING': {
             const logs = await getFeederLogs(feederId); // Gets latest by default
-            return {
-                response: JSON.stringify(logs),
-                error: null,
-            };
+            // return {
+            //     response: JSON.stringify(logs),
+            //     error: null,
+            // };
             if (logs.length > 0) {
                 contextData = `The last feeding was at ${new Date(logs[0].timestamp).toLocaleString()}, and ${logs[0].portionSize} grams were dispensed.`;
             } else {

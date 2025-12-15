@@ -133,7 +133,7 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle className="text-primary">Notifications</CardTitle>
                         <CardDescription>
-                        Manage how you receive notifications.
+                        Get notifications sent to your mail account!
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -195,7 +195,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-primary">Notifications</CardTitle>
             <CardDescription>
-              Manage how you receive notifications.
+              Get notifications sent to your mail account!
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
