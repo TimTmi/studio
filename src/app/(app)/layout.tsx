@@ -51,7 +51,7 @@ export default function AppLayout({
                 <MobileNav />
                 <Link href="/home" className="hidden items-center gap-2 md:flex">
                     <Image src="/icon.png" alt="Autofeeder Logo" width={32} height={32} />
-                    <span className="text-sm font-bold">FoodFPet</span>
+                    <span className="text-sm font-bold">PetPal Hub</span>
                 </Link>
             </div>
 

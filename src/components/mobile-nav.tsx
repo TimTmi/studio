@@ -38,7 +38,7 @@ export function MobileNav() {
           onOpenChange={setOpen}
         >
           <Image src="/icon.png" alt="Autofeeder Logo" width={32} height={32} />
-          <span className="ml-2 font-bold">FoodFPet</span>
+          <span className="ml-2 font-bold">PetPal Hub</span>
         </MobileLink>
         <div className="my-4 h-[calc(100vh-8rem)] pb-10 pl-6">
           <div className="flex flex-col space-y-3">
