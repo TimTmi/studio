@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: transparent;
+    --background: 30 33% 97%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -83,8 +83,7 @@
     @apply border-border;
   }
   body {
-    @apply text-foreground;
-    background: linear-gradient(135deg, #FAF8F5 0%, #EEF3EF 100%);
+    @apply bg-background text-foreground;
     background-attachment: fixed;
   }
   main {
