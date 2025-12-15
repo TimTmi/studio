@@ -4,7 +4,7 @@ import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, Home, CalendarClock, LineChart, Bot, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -31,6 +31,7 @@ export function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="pr-0">
+        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <MobileLink
           href="/home"
           className="flex items-center"
