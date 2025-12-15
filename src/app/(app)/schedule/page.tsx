@@ -1,6 +1,5 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -15,7 +14,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { FeedingSchedule } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, startOfToday } from 'date-fns';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import {
   Table,
@@ -33,7 +32,7 @@ export default function SchedulePage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = useState('12:00');
 
   const userProfileRef = useMemoFirebase(() => {
@@ -71,9 +70,14 @@ export default function SchedulePage() {
         return;
     }
 
-    const [hour, minute] = time.split(':');
-    const scheduledDateTime = new Date(date);
-    scheduledDateTime.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
+    // The date from input is 'YYYY-MM-DD'. To avoid timezone issues,
+    // we need to combine it with the time and parse it carefully.
+    const scheduledDateTime = new Date(`${date}T${time}:00`);
+
+    if (isNaN(scheduledDateTime.getTime())) {
+        toast({ title: 'Invalid Date/Time', description: 'The date or time you entered is not valid.', variant: 'destructive'});
+        return;
+    }
     
     if (scheduledDateTime < new Date()) {
         toast({ title: 'Invalid Time', description: 'You cannot schedule a feeding in the past.', variant: 'destructive'});
@@ -134,13 +138,14 @@ export default function SchedulePage() {
                     <CardDescription>Select a date and time to schedule a single feeding.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <div className="flex justify-center">
-                         <Calendar
-                            mode="single"
-                            selected={date}
-                            onSelect={setDate}
-                            className="rounded-md border"
-                            disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))}
+                     <div className='space-y-2'>
+                        <Label htmlFor="date">Date</Label>
+                        <Input
+                          id="date"
+                          type="date"
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
+                          min={format(new Date(), 'yyyy-MM-dd')}
                         />
                      </div>
                      <div className='space-y-2'>
