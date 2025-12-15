@@ -24,8 +24,18 @@
           "description": "User's last name."
         },
         "settings": {
-          "type": "string",
-          "description": "User settings (can be stored as a JSON string)."
+          "type": "object",
+          "description": "User notification settings.",
+          "properties": {
+            "feedingReminders": {
+              "type": "boolean",
+              "description": "Enable or disable feeding reminders."
+            },
+            "lowFoodAlerts": {
+              "type": "boolean",
+              "description": "Enable or disable low food alerts."
+            }
+          }
         },
         "feederId": {
           "type": "string",
@@ -34,9 +44,7 @@
       },
       "required": [
         "id",
-        "email",
-        "firstName",
-        "lastName"
+        "email"
       ]
     },
     "Feeder": {

@@ -17,7 +17,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Power, PowerOff } from 'lucide-react';
-import type { Feeder } from '@/lib/types';
+import type { Feeder, UserProfile } from '@/lib/types';
 
 export default function SettingsPage() {
     const { user, isUserLoading } = useUser();
@@ -28,9 +28,11 @@ export default function SettingsPage() {
         return doc(firestore, `users/${user.uid}`);
     }, [user, firestore]);
 
-    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
     
     const [feederId, setFeederId] = useState('');
+    const [feedingReminders, setFeedingReminders] = useState(false);
+    const [lowFoodAlerts, setLowFoodAlerts] = useState(false);
 
     const feederRef = useMemoFirebase(() => {
         if (!userProfile?.feederId) return null;
@@ -42,6 +44,8 @@ export default function SettingsPage() {
     useEffect(() => {
         if (userProfile) {
             setFeederId(userProfile.feederId || '');
+            setFeedingReminders(userProfile.settings?.feedingReminders ?? false);
+            setLowFoodAlerts(userProfile.settings?.lowFoodAlerts ?? false);
         }
     }, [userProfile]);
     
@@ -63,6 +67,22 @@ export default function SettingsPage() {
             }, { merge: true });
         }
     }
+    
+    const handleNotificationChange = (type: 'feedingReminders' | 'lowFoodAlerts', value: boolean) => {
+        if (userProfileRef) {
+            const newSettings = {
+                ...userProfile?.settings,
+                [type]: value,
+            };
+            if(type === 'feedingReminders') setFeedingReminders(value);
+            if(type === 'lowFoodAlerts') setLowFoodAlerts(value);
+
+            setDocumentNonBlocking(userProfileRef, {
+                settings: newSettings,
+            }, { merge: true });
+        }
+    };
+
 
     const isLoading = isUserLoading || isProfileLoading;
 
@@ -165,6 +185,8 @@ export default function SettingsPage() {
               </div>
               <Switch
                 id="feeding-reminders"
+                checked={feedingReminders}
+                onCheckedChange={(value) => handleNotificationChange('feedingReminders', value)}
               />
             </div>
             <div className="flex items-center justify-between rounded-lg border p-4">
@@ -176,6 +198,8 @@ export default function SettingsPage() {
               </div>
               <Switch
                 id="low-food-alerts"
+                checked={lowFoodAlerts}
+                onCheckedChange={(value) => handleNotificationChange('lowFoodAlerts', value)}
               />
             </div>
           </CardContent>

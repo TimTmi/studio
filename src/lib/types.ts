@@ -3,7 +3,10 @@ import { Timestamp } from "firebase/firestore";
 export type UserProfile = {
   id: string;
   email: string;
-  settings?: string;
+  settings?: {
+    feedingReminders?: boolean;
+    lowFoodAlerts?: boolean;
+  };
   feederId?: string;
 }
 
