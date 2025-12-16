@@ -3,6 +3,7 @@
 import type { FeedingLogData } from "@/ai/flows/ai-chatbot-feeding-query";
 import * as admin from 'firebase-admin';
 import { format, startOfDay, endOfDay, subDays, startOfTomorrow, endOfTomorrow } from 'date-fns';
+import { UnlockKeyhole } from "lucide-react";
 
 // This is safe to run on the server
 if (!admin.apps.length) {
@@ -85,6 +86,11 @@ export async function getAiResponse(
 ) {
   let finalPrompt = userQuery;
 
+//   return {
+//     response: questionKey,
+//     error: null,
+//   };
+
   // If a question key is provided, it's a "smart" button click
   if (questionKey && feederId) {
      if (!feederId) {
@@ -109,6 +115,10 @@ export async function getAiResponse(
         }
         case 'LAST_FEEDING': {
             const logs = await getFeederLogs(feederId); // Gets latest by default
+            // return {
+            //     response: JSON.stringify(logs),
+            //     error: null,
+            // };
             if (logs.length > 0) {
                 contextData = `The last feeding was at ${new Date(logs[0].timestamp).toLocaleString()}, and ${logs[0].portionSize} grams were dispensed.`;
             } else {

@@ -125,16 +125,16 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col gap-6">
         <div>
-            <h1 className="text-2xl font-bold tracking-tight text-accent">Schedule a Feeding</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-accent">Schedule a feeding</h1>
             <p className="text-muted-foreground">
-                Add individual feeding times for your pet.
+                Make a feeding schedule for your pet!
             </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Card>
                 <CardHeader>
-                    <CardTitle>Add a New Feeding</CardTitle>
+                    <CardTitle className = "text-primary">Add a New Feeding</CardTitle>
                     <CardDescription>Select a date and time to schedule a single feeding.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -165,7 +165,7 @@ export default function SchedulePage() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Upcoming Feedings</CardTitle>
+                    <CardTitle className = "text-primary">Upcoming Feedings</CardTitle>
                     <CardDescription>Here are the next scheduled feeding times.</CardDescription>
                 </CardHeader>
                 <CardContent>
