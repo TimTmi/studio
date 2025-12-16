@@ -37,6 +37,11 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
 
     if (logs) {
         logs.forEach((log: any) => {
+        // Only process logs with a "completed" status
+        if (log.status !== 'completed') {
+            return; 
+        }
+
         const logDate = log.timestamp.toDate();
         logDate.setHours(0,0,0,0);
         
