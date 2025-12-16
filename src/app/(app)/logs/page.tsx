@@ -91,19 +91,22 @@ export default function LogsPage() {
                   </TableRow>
                 ))
               ) : recentLogs && recentLogs.length > 0 ? (
-                recentLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-medium">
-                        <Badge variant="outline" className="capitalize">{log.source || 'scheduled'}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                       {typeof log.portionSize === 'number' ? `${log.portionSize.toFixed(1)}g` : 'N/A'}
-                    </TableCell>
-                  </TableRow>
-                ))
+                recentLogs.map((log) => {
+                  const portion = (log as any).portionSize ?? (log as any).targetPortion;
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">
+                          <Badge variant="outline" className="capitalize">{(log as any).source || 'scheduled'}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {log.timestamp && format(log.timestamp.toDate(), 'PPP p')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                         {typeof portion === 'number' ? `${portion.toFixed(1)}g` : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="h-24 text-center">
