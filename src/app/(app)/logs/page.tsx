@@ -38,7 +38,7 @@ export default function LogsPage() {
     return query(
       collection(firestore, `feeders/${userProfile.feederId}/feedingLogs`),
       orderBy('timestamp', 'desc'),
-      limit(100) // Fetch last 100 logs for the chart
+      limit(100) // Fetch last 100 logs
     );
   }, [firestore, userProfile?.feederId]);
 
@@ -78,7 +78,7 @@ export default function LogsPage() {
               <TableRow>
                 <TableHead>Source</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Amount (g)</TableHead>
+                <TableHead className="text-right">Amount / Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -91,16 +91,20 @@ export default function LogsPage() {
                   </TableRow>
                 ))
               ) : recentLogs && recentLogs.length > 0 ? (
-                recentLogs.map((log) => (
+                recentLogs.map((log: any) => (
                   <TableRow key={log.id}>
                     <TableCell className="font-medium">
                         <Badge variant="outline" className="capitalize">{log.source || 'scheduled'}</Badge>
                     </TableCell>
                     <TableCell>
-                      {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
+                      {log.timestamp && format(log.timestamp.toDate(), 'PPP p')}
                     </TableCell>
                     <TableCell className="text-right">
-                       {typeof log.portionSize === 'number' ? `${log.portionSize.toFixed(1)}g` : 'N/A'}
+                       {log.status === 'completed' ? (
+                        `${(log.portionSize ?? log.targetPortion ?? 0).toFixed(1)}g`
+                       ) : (
+                        <Badge variant="destructive" className="capitalize">{log.status || 'failed'}</Badge>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))
