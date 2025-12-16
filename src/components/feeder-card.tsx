@@ -199,7 +199,6 @@ export function FeederCard({ feeder, lastFeedingTime, nextFeedingTime }: FeederC
                 label="Bowl Level" 
                 value={bowlLevel} 
                 icon={<Drumstick />}
-                isLow={isLowBowl && isOnline} 
             />
         </div>
         <div className="space-y-2">

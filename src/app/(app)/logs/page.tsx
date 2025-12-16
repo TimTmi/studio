@@ -100,7 +100,7 @@ export default function LogsPage() {
                       {log.timestamp && format(new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp), 'PPP p')}
                     </TableCell>
                     <TableCell className="text-right">
-                       {log.portionSize.toFixed(1)}g
+                       {typeof log.portionSize === 'number' ? `${log.portionSize.toFixed(1)}g` : 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))
