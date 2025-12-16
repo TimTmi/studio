@@ -36,15 +36,16 @@ export function FeedingLogChart({ logs }: FeedingLogChartProps) {
     }
 
     if (logs) {
-        logs.forEach(log => {
-        const logDate = new Date(log.timestamp.seconds ? log.timestamp.toDate() : log.timestamp);
+        logs.forEach((log: any) => {
+        const logDate = log.timestamp.toDate();
         logDate.setHours(0,0,0,0);
         
         // Only include logs from the last 7 days
         if(logDate.getTime() >= today.getTime() - 6 * 24 * 60 * 60 * 1000) {
             const dateString = logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             if (dataByDay.hasOwnProperty(dateString)) {
-                dataByDay[dateString] += log.portionSize;
+                const amount = log.portionSize ?? log.targetPortion ?? 0;
+                dataByDay[dateString] += amount;
             }
         }
         });
